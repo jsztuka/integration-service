@@ -20,16 +20,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/redhat-appstudio/integration-service/api/v1alpha1"
-	"k8s.io/apimachinery/pkg/types"
-	"knative.dev/pkg/apis"
 	"strings"
 	"time"
+
+	"github.com/redhat-appstudio/integration-service/api/v1alpha1"
+	"github.com/redhat-appstudio/integration-service/tekton"
+	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/pkg/apis"
 
 	"github.com/go-logr/logr"
 	hasv1alpha1 "github.com/redhat-appstudio/application-service/api/v1alpha1"
 	"github.com/redhat-appstudio/integration-service/controllers/results"
-	"github.com/redhat-appstudio/integration-service/tekton"
 	appstudioshared "github.com/redhat-appstudio/managed-gitops/appstudio-shared/apis/appstudio.redhat.com/v1alpha1"
 	releasev1alpha1 "github.com/redhat-appstudio/release-service/api/v1alpha1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -80,6 +81,34 @@ func (a *Adapter) EnsureApplicationSnapshotExists() (results.OperationResult, er
 			"Application.Name", a.application.Name,
 			"ApplicationSnapshot.Name", existingApplicationSnapshot.Name,
 			"ApplicationSnapshot.Spec.Components", existingApplicationSnapshot.Spec.Components)
+
+		integrationTestScenarios, err := a.getAllIntegrationTestScenariosForApplication(a.application)
+
+		if err != nil {
+			a.logger.Error(err, "Failed to get Integration test scenarios for following application",
+				"Application.Name", a.application.Name,
+				"Application.Namespace", a.application.Namespace)
+		}
+		for _, integrationTestScenarios := range *integrationTestScenarios {
+			integrationPipelineRun, err := a.getLatestPipelineRunForApplicationSnapshotAndScenario(existingApplicationSnapshot, &integrationTestScenarios)
+			if err != nil {
+				a.logger.Error(err, "Failed to get latest pipelineRun for application snapshot and scenario",
+					"integrationPipelineRun:", integrationPipelineRun)
+				return results.RequeueOnErrorOrStop(a.updateStatus())
+			}
+			if integrationPipelineRun != nil {
+				a.logger.Info("Found existing integrationPipelineRun",
+					"IntegrationTestScenario.Name", integrationTestScenarios.Name,
+					"integrationPipelineRun.Name", integrationPipelineRun.Name)
+			}
+			if integrationPipelineRun == nil {
+				a.logger.Info("Creating new pipelinerun for integrationTestscenario",
+					"IntegrationTestScenario.Name", integrationTestScenarios.Name)
+				a.createIntegrationPipelineRun("Integration-"+a.application.Name, a.application.Namespace, &integrationTestScenarios, existingApplicationSnapshot)
+			}
+
+		}
+
 		return results.ContinueProcessing()
 	}
 
@@ -90,10 +119,43 @@ func (a *Adapter) EnsureApplicationSnapshotExists() (results.OperationResult, er
 		return results.RequeueOnErrorOrStop(a.updateStatus())
 	}
 
+	allIntegrationTestScenarios, err := a.getAllIntegrationTestScenariosForApplication(a.application)
+
+	if err != nil {
+		a.logger.Error(err, "Failed to get Integration test scenarios for following application",
+			"Application.Name", a.application.Name,
+			"Application.Namespace", a.application.Namespace)
+	}
+
+	for _, allIntegrationTestScenarios := range *allIntegrationTestScenarios {
+		integrationPipelineRun, err := a.getLatestPipelineRunForApplicationSnapshotAndScenario(newApplicationSnapshot, &allIntegrationTestScenarios)
+		if err != nil {
+			a.logger.Error(err, "Failed to get latest pipelineRun for application snapshot and scenario",
+				"integrationPipelineRun:", integrationPipelineRun)
+			return results.RequeueOnErrorOrStop(a.updateStatus())
+		}
+		if integrationPipelineRun != nil {
+			a.logger.Info("Found existing integrationPipelineRun",
+				"IntegrationTestScenario.Name", allIntegrationTestScenarios.Name,
+				"integrationPipelineRun.Name", integrationPipelineRun.Name)
+		}
+		if integrationPipelineRun == nil {
+			a.logger.Info("Creating new pipelinerun for integrationTestscenario",
+				"IntegrationTestScenario.Name", allIntegrationTestScenarios.Name)
+			a.createIntegrationPipelineRun("Integration-"+a.application.Name, a.application.Namespace, &allIntegrationTestScenarios, newApplicationSnapshot)
+		}
+
+	}
+
+	if err != nil {
+		a.logger.Error(err, "Failed to create pipelinerun",
+			"Application.Name", a.application.Name, "Application.Namespace", a.application.Namespace)
+	}
 	a.logger.Info("Created new ApplicationSnapshot",
 		"Application.Name", a.application.Name,
 		"ApplicationSnapshot.Name", newApplicationSnapshot.Name,
-		"ApplicationSnapshot.Spec.Components", newApplicationSnapshot.Spec.Components)
+		"ApplicationSnapshot.Spec.Components", newApplicationSnapshot.Spec.Components,
+		"allIntegrationTestScenarios:", allIntegrationTestScenarios)
 
 	return results.ContinueProcessing()
 }
@@ -743,7 +805,7 @@ func (a *Adapter) createMissingReleasesForReleasePlans(releasePlans *[]releasev1
 func (a *Adapter) getRequiredIntegrationTestScenariosForApplication(application *hasv1alpha1.Application) (*[]v1alpha1.IntegrationTestScenario, error) {
 	labelSelector := labels.NewSelector()
 	integrationList := &v1alpha1.IntegrationTestScenarioList{}
-	labelRequirement, err := labels.NewRequirement("test.appstudio.openshift.io/optional", selection.NotIn, []string{"false"})
+	labelRequirement, err := labels.NewRequirement("test.appstudio.openshift.io/optional", selection.NotIn, []string{"true"})
 	if err != nil {
 		return nil, err
 	}
@@ -763,7 +825,43 @@ func (a *Adapter) getRequiredIntegrationTestScenariosForApplication(application 
 	return &integrationList.Items, nil
 }
 
+// getAllIntegrationTestScenariosForApplication returns all IntegrationTestScenarios used by the application being processed.
+func (a *Adapter) getAllIntegrationTestScenariosForApplication(application *hasv1alpha1.Application) (*[]v1alpha1.IntegrationTestScenario, error) {
+	integrationList := &v1alpha1.IntegrationTestScenarioList{}
+
+	opts := &client.ListOptions{
+		Namespace:     application.Namespace,
+		FieldSelector: fields.OneTermEqualSelector("spec.application", application.Name),
+	}
+
+	err := a.client.List(a.context, integrationList, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &integrationList.Items, nil
+}
+
 // updateStatus updates the status of the PipelineRun being processed.
 func (a *Adapter) updateStatus() error {
 	return a.client.Status().Update(a.context, a.pipelineRun)
+}
+
+// createIntegrationPipelineRun creates and returns a new integration PipelineRun. The Pipeline information and the parameters to it
+// will be extracted from the given integrationScenario. The integration's ApplicationSnapshot will also be passed to the
+// integration PipelineRun.
+func (a *Adapter) createIntegrationPipelineRun(prefix, namespace string, integrationTestScenario *v1alpha1.IntegrationTestScenario, applicationSnapshot *appstudioshared.ApplicationSnapshot) error {
+
+	pipelineRun := tekton.NewIntegrationPipelineRun(prefix, namespace, *integrationTestScenario).
+		WithApplicationSnapshot(applicationSnapshot).
+		WithIntegrationLabels(integrationTestScenario.Name).
+		WithApplicationAndComponent(a.application.Name, a.component.Name).
+		AsPipelineRun()
+
+	err := a.client.Create(a.context, pipelineRun)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

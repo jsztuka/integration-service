@@ -19,6 +19,7 @@ package integration
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	hasv1alpha1 "github.com/redhat-appstudio/application-service/api/v1alpha1"
 	"github.com/redhat-appstudio/integration-service/api/v1alpha1"
