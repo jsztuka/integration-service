@@ -23,6 +23,7 @@ import (
 	applicationapiv1alpha1 "github.com/redhat-appstudio/application-api/api/v1alpha1"
 	"github.com/redhat-appstudio/integration-service/api/v1alpha1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -79,6 +80,12 @@ func NewIntegrationPipelineRun(prefix, namespace string, integrationTestScenario
 			PipelineRef: &tektonv1beta1.PipelineRef{
 				Name:   integrationTestScenario.Spec.Pipeline,
 				Bundle: integrationTestScenario.Spec.Bundle,
+			},
+			Workspaces: []tektonv1beta1.WorkspaceBinding{
+				{
+					Name:   "kubeconf-auth",
+					Secret: &corev1.SecretVolumeSource{SecretName: "my-second-managed-environment-secret"},
+				},
 			},
 		},
 	}
