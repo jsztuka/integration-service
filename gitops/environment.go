@@ -58,7 +58,7 @@ func (e *CopiedEnvironment) WithIntegrationLabels(integrationTestScenario *v1alp
 
 }
 
-func (e *CopiedEnvironment) WithApplicationSnapshot(snapshot *applicationapiv1alpha1.ApplicationSnapshot) *CopiedEnvironment {
+func (e *CopiedEnvironment) WithApplicationSnapshot(snapshot *applicationapiv1alpha1.Snapshot) *CopiedEnvironment {
 
 	if e.ObjectMeta.Labels == nil {
 		e.ObjectMeta.Labels = map[string]string{}
