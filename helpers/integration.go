@@ -166,3 +166,13 @@ func GetHACBSTestResultsFromPipelineRun(logger logr.Logger, pipelineRun *tektonv
 	}
 	return results, nil
 }
+
+func CheckIntegrationTestScenarioForEnvironment(logger logr.Logger, integrationTestScenario *v1alpha1.IntegrationTestScenario) string {
+	//make an empty integrationTestScenario
+	emptyScenario := &v1alpha1.IntegrationTestScenario{}
+	if emptyScenario.Spec.Environment.Name == integrationTestScenario.Spec.Environment.Name {
+		logger.Info("IntegrationTestScenario does not contain Environment: ", integrationTestScenario.Spec)
+		return ""
+	}
+	return integrationTestScenario.Spec.Environment.Name
+}
