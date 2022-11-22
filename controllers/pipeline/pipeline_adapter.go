@@ -90,6 +90,32 @@ func (a *Adapter) EnsureApplicationSnapshotExists() (results.OperationResult, er
 			"Application.Name", a.application.Name, "Application.Namespace", a.application.Namespace)
 		return results.RequeueWithError(err)
 	}
+	//insert testing code here
+	//first find all integrationtest scenarios
+	integrationTestScenarios, err := helpers.GetRequiredIntegrationTestScenariosForApplication(a.client, a.context, a.application)
+	if err != nil {
+		return results.RequeueWithError(err)
+	}
+	//then look for env within scenario
+	foundEnv := helpers.CheckIntegrationTestScenarioForEnvironment(a.logger, integrationTestScenarios)
+	a.logger.Info("These are the environments found in integrationScenarios:",
+		"environments:", foundEnv)
+	sampleEnv := &applicationapiv1alpha1.Environment{}
+
+	err2 := a.client.Get(a.context, types.NamespacedName{
+		Namespace: a.application.Namespace,
+		Name:      "example-env",
+	}, sampleEnv)
+
+	a.logger.Info("This is the environment that we have found: ", "Environment:", err2,
+		"sample-env:", sampleEnv)
+	// a.logger.Info("Some information that I would love:",
+	// 	"env:Name:", sampleEnv.Name,
+	// 	"env:Namespace:", sampleEnv.Namespace,
+	// 	"env:Stragegy:", sampleEnv.Spec.DeploymentStrategy,
+	// 	"env:ApiURL", sampleEnv.Spec.UnstableConfigurationFields.APIURL,
+	// 	"env:conf:env", sampleEnv.Spec.Configuration.Env,
+	// )
 
 	a.logger.Info("Created new ApplicationSnapshot",
 		"Application.Name", a.application.Name,

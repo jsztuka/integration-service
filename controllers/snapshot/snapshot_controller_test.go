@@ -1,8 +1,9 @@
 package snapshot
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
 	"reflect"
+
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

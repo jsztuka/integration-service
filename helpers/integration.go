@@ -167,12 +167,18 @@ func GetHACBSTestResultsFromPipelineRun(logger logr.Logger, pipelineRun *tektonv
 	return results, nil
 }
 
-func CheckIntegrationTestScenarioForEnvironment(logger logr.Logger, integrationTestScenario *v1alpha1.IntegrationTestScenario) string {
-	//make an empty integrationTestScenario
-	emptyScenario := &v1alpha1.IntegrationTestScenario{}
-	if emptyScenario.Spec.Environment.Name == integrationTestScenario.Spec.Environment.Name {
-		logger.Info("IntegrationTestScenario does not contain Environment: ", integrationTestScenario.Spec)
-		return ""
+//Check integration test scenarios for environment and return list of strings names of the environments
+func CheckIntegrationTestScenarioForEnvironment(logger logr.Logger, integrationTestScenarios *[]v1alpha1.IntegrationTestScenario) []string {
+
+	environments := []string{}
+	for _, integrationTestScenario := range *integrationTestScenarios {
+		if integrationTestScenario.Spec.Environment.Name == "" {
+			logger.Info("IntegrationTestScenario does not contain Environment: ", integrationTestScenario.Spec)
+			return nil
+		} else {
+			environments = append(environments, integrationTestScenario.Spec.Environment.Name)
+		}
+		//I need to return integrationtestscenarios so I know which one holds the environment information and I can reference those to the newly copied environment
 	}
-	return integrationTestScenario.Spec.Environment.Name
+	return environments
 }
