@@ -80,16 +80,17 @@ func (a *Adapter) EnsureAllIntegrationTestPipelinesExist() (results.OperationRes
 	if integrationTestScenarios != nil {
 		for _, integrationTestScenario := range *integrationTestScenarios {
 			integrationTestScenario := integrationTestScenario //G601
+			//a.logger.Info("Im interested in how integrationTestScenario interprets env", "just ENV:", integrationTestScenario.Spec.Environment)
 			if integrationTestScenario.Spec.Environment.Name != "" {
 				//get the environmet according to environment name from integrationTestScenario
 				existingEnv := a.getEnvironmentFromIntegrationTestScenario(&integrationTestScenario)
-				a.logger.Info("Some NEW information that I would love to see:",
-					"env:Name:", existingEnv.Name,
-					"env:Namespace:", existingEnv.Namespace,
-					"env:Stragegy:", existingEnv.Spec.DeploymentStrategy,
-					"env:ApiURL", existingEnv.Spec.UnstableConfigurationFields.APIURL,
-					"env:conf:env", existingEnv.Spec.Configuration.Env,
-				)
+				// a.logger.Info("Some NEW information that I would love to see:",
+				// 	"env:Name:", existingEnv.Name,
+				// 	"env:Namespace:", existingEnv.Namespace,
+				// 	"env:Stragegy:", existingEnv.Spec.DeploymentStrategy,
+				// 	"env:ApiURL", existingEnv.Spec.UnstableConfigurationFields.APIURL,
+				// 	"env:conf:env", existingEnv.Spec.Configuration.Env,
+				// )
 
 				//copy existing environment
 

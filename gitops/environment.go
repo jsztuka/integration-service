@@ -1,8 +1,6 @@
 package gitops
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	applicationapiv1alpha1 "github.com/redhat-appstudio/application-api/api/v1alpha1"
 	"github.com/redhat-appstudio/integration-service/api/v1alpha1"
@@ -29,42 +27,47 @@ func NewCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.En
 	existingClusterCreds := existingEnvironment.Spec.UnstableConfigurationFields.ClusterCredentialsSecret
 
 	//here should be the magic that decides envVars
-	copyEnvVar := applicationapiv1alpha1.EnvironmentConfiguration{}
 
-	//integrationTestScenario.Spec.Environment.Configuration
-	for intEnvVars := range integrationTestScenario.Spec.Environment.Configuration.Env {
-		match := false
-		if len(integrationTestScenario.Spec.Environment.Configuration.Env) == 0 {
-			break
-		} else if len(existingEnvironment.Spec.Configuration.Env) == 0 {
-			copyEnvVar.Env = integrationTestScenario.Spec.Environment.Configuration.Env
-			break
-		}
-		for existingEnvVar := range existingEnvironment.Spec.Configuration.Env {
-			if integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name == existingEnvironment.Spec.Configuration.Env[existingEnvVar].Name {
-				match = true
-				copyEnvVar.Env[existingEnvVar].Value = integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value
-				fmt.Println(copyEnvVar.Env[existingEnvVar].Value)
+	copyEnvVar := applicationapiv1alpha1.EnvironmentConfiguration{}
+	// if integrationtestScenario has no EnvVars specified
+	// use existing EnvVars
+	if integrationTestScenario.Spec.Environment.Configuration.Env == nil {
+		copyEnvVar.Env = existingEnvironment.Spec.Configuration.Env
+	} else {
+		for intEnvVars := range integrationTestScenario.Spec.Environment.Configuration.Env {
+			match := false
+			// if existing environment does not contain EnvVars, copy ones from IntegrationTestScenario
+			if existingEnvironment.Spec.Configuration.Env == nil {
+				copyEnvVar.Env = integrationTestScenario.Spec.Environment.Configuration.Env
+				break
 			}
-			if !match && (existingEnvVar == len(existingEnvironment.Spec.Configuration.Env)-1) {
-				copyEnvVar.Env = append(copyEnvVar.Env, applicationapiv1alpha1.EnvVarPair{Name: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name, Value: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value})
+			for existingEnvVar := range existingEnvironment.Spec.Configuration.Env {
+				if integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name == existingEnvironment.Spec.Configuration.Env[existingEnvVar].Name {
+					match = true
+					copyEnvVar.Env[existingEnvVar].Value = integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value
+				}
+				// in case that EnvVar from IntegrationTestScenario is not matching any EnvVar from existingEnv, add this ITS EnvVar to coppied Environment
+				if !match && (existingEnvVar == len(existingEnvironment.Spec.Configuration.Env)-1) {
+					copyEnvVar.Env = append(copyEnvVar.Env, applicationapiv1alpha1.EnvVarPair{Name: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name, Value: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value})
+				}
 			}
 		}
 	}
 
 	copyOfEnvironment := applicationapiv1alpha1.Environment{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: existingEnvironment.Name + "-",
+			GenerateName: existingEnvironment.Name + "-" + integrationTestScenario.Name + "-",
 			Namespace:    namespace,
 		},
 		Spec: applicationapiv1alpha1.EnvironmentSpec{
 			Type:               applicationapiv1alpha1.EnvironmentType_POC,
-			DisplayName:        existingEnvironment.Name,
+			DisplayName:        existingEnvironment.Name + "-" + integrationTestScenario.Name,
 			Tags:               []string{"ephemeral"},
 			DeploymentStrategy: applicationapiv1alpha1.DeploymentStrategy_Manual,
+			Configuration:      copyEnvVar,
 			UnstableConfigurationFields: &applicationapiv1alpha1.UnstableEnvironmentConfiguration{ //TO-DO change naming
 				KubernetesClusterCredentials: applicationapiv1alpha1.KubernetesClusterCredentials{
-					TargetNamespace:          integrationTestScenario.Name + id.String(), //Copied environment needs to hold name of (integrationScenario.Name + snapshot.Name + -UUID)
+					TargetNamespace:          integrationTestScenario.Name + "-" + id.String(), //Copied environment needs to hold name of (integrationScenario.Name + snapshot.Name + -UUID)
 					APIURL:                   existingApiURL,
 					ClusterCredentialsSecret: existingClusterCreds,
 				},
