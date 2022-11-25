@@ -135,6 +135,7 @@ func (r *Reconciler) getComponentFromSnapshot(context context.Context, snapshot 
 type AdapterInterface interface {
 	EnsureAllReleasesExist() (results.OperationResult, error)
 	EnsureAllIntegrationTestPipelinesExist() (results.OperationResult, error)
+	EnsureCreationOfEnvironment() (results.OperationResult, error)
 	EnsureGlobalComponentImageUpdated() (results.OperationResult, error)
 	EnsureApplicationSnapshotEnvironmentBindingExist() (results.OperationResult, error)
 }
@@ -150,6 +151,7 @@ func (r *Reconciler) ReconcileHandler(adapter AdapterInterface) (ctrl.Result, er
 		adapter.EnsureGlobalComponentImageUpdated,
 		adapter.EnsureApplicationSnapshotEnvironmentBindingExist,
 		adapter.EnsureAllIntegrationTestPipelinesExist,
+		adapter.EnsureCreationOfEnvironment,
 	}
 
 	for _, operation := range operations {

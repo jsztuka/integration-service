@@ -1,6 +1,8 @@
 package gitops
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	applicationapiv1alpha1 "github.com/redhat-appstudio/application-api/api/v1alpha1"
 	"github.com/redhat-appstudio/integration-service/api/v1alpha1"
@@ -20,7 +22,7 @@ func (r *CopiedEnvironment) AsEnvironment() *applicationapiv1alpha1.Environment 
 	return &r.Environment
 }
 
-func NewCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.Environment, namespace string, integrationTestScenario *v1alpha1.IntegrationTestScenario) *CopiedEnvironment {
+func NewCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.Environment, namespace string, integrationTestScenario *v1alpha1.IntegrationTestScenario, applicationSnapshot *applicationapiv1alpha1.ApplicationSnapshot) *CopiedEnvironment {
 	id := uuid.New()
 	//existingTargetNamespace := existingEnvironment.Spec.UnstableConfigurationFields.TargetNamespace
 	existingApiURL := existingEnvironment.Spec.UnstableConfigurationFields.APIURL
@@ -98,3 +100,20 @@ func (e *CopiedEnvironment) WithApplicationSnapshot(snapshot *applicationapiv1al
 }
 
 //add lables from environment to binding (environment and binding should have same labels)
+//check if ITS has snapshot already
+
+func EnvironmentWithSnapshotAlreadyExists(snapshot *applicationapiv1alpha1.ApplicationSnapshot, integrationTestScenario *v1alpha1.IntegrationTestScenario, existingEnvironment *applicationapiv1alpha1.Environment) bool {
+	fmt.Println("KOZKABOZKA-SCENARIO:")
+	if labelValue, found := existingEnvironment.GetLabels()["test.appstudio.openshift.io/scenario"]; found && labelValue == snapshot.Name {
+		fmt.Println("TYTOK JE: TRUE")
+	}
+	fmt.Println(existingEnvironment.GetLabels()["test.appstudio.openshift.io/scenario"])
+	fmt.Println("KOZKABOZKA-SNAPSHOT:")
+	fmt.Println(existingEnvironment.GetLabels()["test.appstudio.openshift.io/snapshot"])
+	if existingEnvironment.ObjectMeta.Labels["test.appstudio.openshift.io/scenario"] == integrationTestScenario.Name && existingEnvironment.ObjectMeta.Labels["test.appstudio.openshift.io/snapshot"] == snapshot.Name {
+		return true
+	} else {
+		return false
+	}
+
+}

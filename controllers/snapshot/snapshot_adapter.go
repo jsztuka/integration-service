@@ -18,6 +18,7 @@ package snapshot
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -83,7 +84,7 @@ func (a *Adapter) EnsureAllIntegrationTestPipelinesExist() (results.OperationRes
 			//a.logger.Info("Im interested in how integrationTestScenario interprets env", "just ENV:", integrationTestScenario.Spec.Environment)
 			if integrationTestScenario.Spec.Environment.Name != "" {
 				//get the environmet according to environment name from integrationTestScenario
-				existingEnv := a.getEnvironmentFromIntegrationTestScenario(&integrationTestScenario)
+				//existingEnv := a.getEnvironmentFromIntegrationTestScenario(&integrationTestScenario)
 				// a.logger.Info("Some NEW information that I would love to see:",
 				// 	"env:Name:", existingEnv.Name,
 				// 	"env:Namespace:", existingEnv.Namespace,
@@ -94,11 +95,11 @@ func (a *Adapter) EnsureAllIntegrationTestPipelinesExist() (results.OperationRes
 
 				//copy existing environment
 
-				err := a.createCopyOfExistingEnvironment(existingEnv, a.snapshot.Namespace, &integrationTestScenario)
+				// err := a.createCopyOfExistingEnvironment(existingEnv, a.snapshot.Namespace, &integrationTestScenario)
 
-				if err != nil {
-					a.logger.Error(err, "Something went wrong with coppying of environment.")
-				}
+				// if err != nil {
+				// 	a.logger.Error(err, "Something went wrong with coppying of environment.")
+				// }
 
 				a.logger.Info("IntegrationTestScenario has environment specified, skipping creation of pipelinerun.",
 					"IntegrationTestScenario:", integrationTestScenario.Name)
@@ -163,9 +164,55 @@ func (a *Adapter) EnsureAllIntegrationTestPipelinesExist() (results.OperationRes
 // 		3.2 if they exist - update, if they dont exist, add them
 ////after the environment is copied we need to create snapshotenvironmentbindig (function for that is already created - gitops)
 
-// func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error) {
+func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error) {
 
-// }
+	integrationTestScenarios, err := helpers.GetAllIntegrationTestScenariosForApplication(a.client, a.context, a.application)
+
+	if err != nil {
+		a.logger.Error(err, "Failed to get Integration test scenarios for following application",
+			"Application.Name", a.application.Name,
+			"Application.Namespace", a.application.Namespace)
+		return results.RequeueOnErrorOrStop(err)
+	}
+
+	allEnvironments, err := a.getAllEnvironments()
+	if err != nil {
+		return results.RequeueOnErrorOrStop(err)
+	}
+
+	if integrationTestScenarios != nil {
+		for _, integrationTestScenario := range *integrationTestScenarios {
+			integrationTestScenario := integrationTestScenario //G601
+			for _, environment := range *allEnvironments {
+				if helpers.HasLabelWithValue(&environment, "test.appstudio.openshift.io/snapshot", a.snapshot.Name) && helpers.HasLabelWithValue(&environment, "test.appstudio.openshift.io/scenario", integrationTestScenario.Name) {
+					fmt.Println("ENV: " + environment.Name + "Already exists and contains snapshot: " + a.snapshot.Name + " And scenario: " + integrationTestScenario.Name)
+					return results.ContinueProcessing()
+				}
+			}
+			if integrationTestScenario.Spec.Environment.Name != "" {
+				//get the environmet according to environment name from integrationTestScenario
+				existingEnv := a.getEnvironmentFromIntegrationTestScenario(&integrationTestScenario)
+				//copy existing environment
+				err, coppyEnv := a.createCopyOfExistingEnvironment(existingEnv, a.snapshot.Namespace, &integrationTestScenario, a.snapshot)
+
+				if err != nil {
+					a.logger.Error(err, "Something went wrong with coppying of environment.")
+					return results.RequeueOnErrorOrStop(err)
+				}
+
+				components, err := a.getAllApplicationComponents(a.application)
+				if err != nil {
+					return results.RequeueWithError(err)
+				}
+
+				a.createApplicationSnapshotEnvironmentBindingForSnapshot(a.application, coppyEnv, a.snapshot, components)
+			}
+		}
+	}
+
+	return results.ContinueProcessing()
+
+}
 
 // EnsureGlobalComponentImageUpdated is an operation that ensure the ContainerImage in the Global Candidate List
 // being updated when the ApplicationSnapshot passed all the integration tests
@@ -497,15 +544,18 @@ func (a *Adapter) updateExistingApplicationSnapshotEnvironmentBindingWithSnapsho
 }
 
 //createNewEnvironment
-func (a *Adapter) createCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.Environment, namespace string, integrationTestScenario *v1alpha1.IntegrationTestScenario) error {
-	environment := gitops.NewCopyOfExistingEnvironment(existingEnvironment, namespace, integrationTestScenario).AsEnvironment()
+func (a *Adapter) createCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.Environment, namespace string, integrationTestScenario *v1alpha1.IntegrationTestScenario, applicationSnapshot *applicationapiv1alpha1.ApplicationSnapshot) (error, *applicationapiv1alpha1.Environment) {
+	environment := gitops.NewCopyOfExistingEnvironment(existingEnvironment, namespace, integrationTestScenario, applicationSnapshot).
+		WithIntegrationLabels(integrationTestScenario).
+		WithApplicationSnapshot(applicationSnapshot).
+		AsEnvironment()
 
 	err := a.client.Create(a.context, environment)
 	if err != nil {
-		return err
+		return err, environment
 	}
 
-	return nil
+	return err, environment
 }
 
 func (a *Adapter) getEnvironmentFromIntegrationTestScenario(integrationTestScenario *v1alpha1.IntegrationTestScenario) *applicationapiv1alpha1.Environment {
