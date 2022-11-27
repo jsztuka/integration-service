@@ -263,9 +263,17 @@ var _ = Describe("Gitops functions for managing ApplicationSnapshots", Ordered, 
 			Expect(copiedEnvWithEnvVarsDiff.Spec.Configuration.Env).To(Equal(expectEnv.Spec.Configuration.Env))
 		})
 
-		// compare envVars of the coppied environment
-		// have multiple cases with different envVars
-		// check Labels
+		It("can append labels that comes from ApplicationSnapshot to Environment and make sure that label value matches the snapshot name", func() {
+			copiedEnvWithEnvVarsDiff.WithApplicationSnapshot(hasSnapshot)
+			Expect(copiedEnvWithEnvVarsDiff.Labels["test.appstudio.openshift.io/snapshot"]).
+				To(Equal(hasSnapshot.Name))
+		})
+
+		It("can append labels that comes from IntegrationTestScenario to Environment and make sure that label value matches the snapshot name", func() {
+			copiedEnvWithEnvVarsDiff.WithIntegrationLabels(hasIntTestSc)
+			Expect(copiedEnvWithEnvVarsDiff.Labels["test.appstudio.openshift.io/scenario"]).
+				To(Equal(hasIntTestSc.Name))
+		})
 	})
 
 })

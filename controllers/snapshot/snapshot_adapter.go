@@ -134,15 +134,9 @@ func (a *Adapter) EnsureAllIntegrationTestPipelinesExist() (results.OperationRes
 	return results.ContinueProcessing()
 }
 
-////Make ensure function that go throught all IS that contain environment and create copy of the environment
-//I get all ITS on line 69, then I can use function that list envs for all ITS
-// #1 get the environment using `Get.`, then create copy of it -all this for one ITS, then do it for another one - got it!!
-// #2 if the env exists - copy it like a master
-// 		2.2 targetNamespace should be combination of application and integration test scenario
-// #3 compare Envpair from environment with ones that are in integrationtestScenario
-// 		3.2 if they exist - update, if they dont exist, add them
-////after the environment is copied we need to create snapshotenvironmentbindig (function for that is already created - gitops)
-
+//EnsureCreationOfEnvironment makes sure that all envrionemnts that were requested via
+//IntegrationTestScenarios get created, in case that environment is already created, provides
+//a message about this fact
 func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error) {
 
 	integrationTestScenarios, err := helpers.GetAllIntegrationTestScenariosForApplication(a.client, a.context, a.application)
@@ -163,19 +157,21 @@ func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error)
 		for _, integrationTestScenario := range *integrationTestScenarios {
 			integrationTestScenario := integrationTestScenario //G601
 			for _, environment := range *allEnvironments {
+				//prevent creating already existing environments
 				if helpers.HasLabelWithValue(&environment, "test.appstudio.openshift.io/snapshot", a.snapshot.Name) && helpers.HasLabelWithValue(&environment, "test.appstudio.openshift.io/scenario", integrationTestScenario.Name) {
-					fmt.Println("ENV: " + environment.Name + "Already exists and contains snapshot: " + a.snapshot.Name + " And scenario: " + integrationTestScenario.Name)
+					fmt.Println("ENV: " + environment.Name + "Already exists and contains snapshot: " + a.snapshot.Name + " and scenario: " + integrationTestScenario.Name)
 					return results.ContinueProcessing()
 				}
 			}
 			if integrationTestScenario.Spec.Environment.Name != "" {
 				//get the environmet according to environment name from integrationTestScenario
 				existingEnv := a.getEnvironmentFromIntegrationTestScenario(&integrationTestScenario)
+
 				//copy existing environment
 				err, coppyEnv := a.createCopyOfExistingEnvironment(existingEnv, a.snapshot.Namespace, &integrationTestScenario, a.snapshot)
 
 				if err != nil {
-					a.logger.Error(err, "Something went wrong with coppying of environment.")
+					a.logger.Error(err, "Coppying of environment failed.")
 					return results.RequeueOnErrorOrStop(err)
 				}
 
@@ -522,7 +518,10 @@ func (a *Adapter) updateExistingApplicationSnapshotEnvironmentBindingWithSnapsho
 	return applicationSnapshotEnvironmentBinding, nil
 }
 
-//createNewEnvironment
+//createCopyOfExistingEnvironment uses existing env as input, specifies namespace where the environment is situated,
+//integrationTestScenario contains information about existing environment
+//snapshot is mainly used for adding labels
+//returns copy of already existing environment with updated envVars
 func (a *Adapter) createCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.Environment, namespace string, integrationTestScenario *v1alpha1.IntegrationTestScenario, applicationSnapshot *applicationapiv1alpha1.ApplicationSnapshot) (error, *applicationapiv1alpha1.Environment) {
 	environment := gitops.NewCopyOfExistingEnvironment(existingEnvironment, namespace, integrationTestScenario, applicationSnapshot).
 		WithIntegrationLabels(integrationTestScenario).
@@ -537,6 +536,8 @@ func (a *Adapter) createCopyOfExistingEnvironment(existingEnvironment *applicati
 	return err, environment
 }
 
+//getEnvironmentFromIntegrationTestScenario looks for already existing environment, if it exist it is returned, if not, nil is returned then together with
+//information about what went wrong
 func (a *Adapter) getEnvironmentFromIntegrationTestScenario(integrationTestScenario *v1alpha1.IntegrationTestScenario) *applicationapiv1alpha1.Environment {
 	existingEnv := &applicationapiv1alpha1.Environment{}
 
