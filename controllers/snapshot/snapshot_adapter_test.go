@@ -113,8 +113,8 @@ var _ = Describe("Snapshot Adapter", Ordered, func() {
 				Configuration: applicationapiv1alpha1.EnvironmentConfiguration{
 					Env: []applicationapiv1alpha1.EnvVarPair{
 						{
-							Name:  "var_name",
-							Value: "test",
+							Name:  "VAR_NAME",
+							Value: "TEST",
 						},
 					},
 				},

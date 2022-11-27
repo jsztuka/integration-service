@@ -75,35 +75,14 @@ func (a *Adapter) EnsureAllIntegrationTestPipelinesExist() (results.OperationRes
 			"Application.Name", a.application.Name,
 			"Application.Namespace", a.application.Namespace)
 	}
-	////////////////////////////////////////////////
-	//skip scenarios that have environment defined// - last step
-	////////////////////////////////////////////////
+
 	if integrationTestScenarios != nil {
 		for _, integrationTestScenario := range *integrationTestScenarios {
 			integrationTestScenario := integrationTestScenario //G601
-			//a.logger.Info("Im interested in how integrationTestScenario interprets env", "just ENV:", integrationTestScenario.Spec.Environment)
-			if integrationTestScenario.Spec.Environment.Name != "" {
+			if integrationTestScenario.Spec.Environment.Name != "" && len(integrationTestScenario.Spec.Environment.Configuration.Env) != 0 {
 				//get the environmet according to environment name from integrationTestScenario
-				//existingEnv := a.getEnvironmentFromIntegrationTestScenario(&integrationTestScenario)
-				// a.logger.Info("Some NEW information that I would love to see:",
-				// 	"env:Name:", existingEnv.Name,
-				// 	"env:Namespace:", existingEnv.Namespace,
-				// 	"env:Stragegy:", existingEnv.Spec.DeploymentStrategy,
-				// 	"env:ApiURL", existingEnv.Spec.UnstableConfigurationFields.APIURL,
-				// 	"env:conf:env", existingEnv.Spec.Configuration.Env,
-				// )
-
-				//copy existing environment
-
-				// err := a.createCopyOfExistingEnvironment(existingEnv, a.snapshot.Namespace, &integrationTestScenario)
-
-				// if err != nil {
-				// 	a.logger.Error(err, "Something went wrong with coppying of environment.")
-				// }
-
-				a.logger.Info("IntegrationTestScenario has environment specified, skipping creation of pipelinerun.",
-					"IntegrationTestScenario:", integrationTestScenario.Name)
-				continue
+				a.logger.Info("IntegrationTestScenario has environment defined, skipping creation of pipelinerun.", "IntegrationTestScenario: ", integrationTestScenario)
+				return results.ContinueProcessing()
 			}
 			integrationPipelineRun, err := helpers.GetLatestPipelineRunForApplicationSnapshotAndScenario(a.client, a.context, a.application, a.snapshot, &integrationTestScenario)
 			if err != nil {

@@ -1,17 +1,11 @@
 package gitops
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	applicationapiv1alpha1 "github.com/redhat-appstudio/application-api/api/v1alpha1"
 	"github.com/redhat-appstudio/integration-service/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-type ClusterCredentials struct {
-	applicationapiv1alpha1.KubernetesClusterCredentials
-}
 
 type CopiedEnvironment struct {
 	applicationapiv1alpha1.Environment
@@ -22,36 +16,40 @@ func (r *CopiedEnvironment) AsEnvironment() *applicationapiv1alpha1.Environment 
 	return &r.Environment
 }
 
+// check if Env already contains requested Name
+func contains(s applicationapiv1alpha1.EnvironmentConfiguration, e string) bool {
+	for a := range s.Env {
+		if s.Env[a].Name == e {
+			return true
+		}
+	}
+	return false
+}
+
+// NewCopyOfExistingEnvironment gets the existing environment from current namespace and makes copy of it
+// new name is generated consisting of existing environment name and integrationTestScenario name
+// targetNamespace gets name of integrationTestScenario and uuid
 func NewCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.Environment, namespace string, integrationTestScenario *v1alpha1.IntegrationTestScenario, applicationSnapshot *applicationapiv1alpha1.ApplicationSnapshot) *CopiedEnvironment {
 	id := uuid.New()
-	//existingTargetNamespace := existingEnvironment.Spec.UnstableConfigurationFields.TargetNamespace
-	existingApiURL := existingEnvironment.Spec.UnstableConfigurationFields.APIURL
-	existingClusterCreds := existingEnvironment.Spec.UnstableConfigurationFields.ClusterCredentialsSecret
-
-	//here should be the magic that decides envVars
+	existingApiURL := existingEnvironment.Spec.UnstableConfigurationFields.KubernetesClusterCredentials.APIURL
+	existingClusterCreds := existingEnvironment.Spec.UnstableConfigurationFields.KubernetesClusterCredentials.ClusterCredentialsSecret
 
 	copyEnvVar := applicationapiv1alpha1.EnvironmentConfiguration{}
-	// if integrationtestScenario has no EnvVars specified
-	// use existing EnvVars
-	if integrationTestScenario.Spec.Environment.Configuration.Env == nil {
-		copyEnvVar.Env = existingEnvironment.Spec.Configuration.Env
-	} else {
-		for intEnvVars := range integrationTestScenario.Spec.Environment.Configuration.Env {
-			match := false
-			// if existing environment does not contain EnvVars, copy ones from IntegrationTestScenario
-			if existingEnvironment.Spec.Configuration.Env == nil {
-				copyEnvVar.Env = integrationTestScenario.Spec.Environment.Configuration.Env
-				break
-			}
-			for existingEnvVar := range existingEnvironment.Spec.Configuration.Env {
-				if integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name == existingEnvironment.Spec.Configuration.Env[existingEnvVar].Name {
-					match = true
-					copyEnvVar.Env[existingEnvVar].Value = integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value
-				}
+	copyEnvVar = existingEnvironment.Spec.Configuration
+
+	for intEnvVars := range integrationTestScenario.Spec.Environment.Configuration.Env {
+		// if existing environment does not contain EnvVars, copy ones from IntegrationTestScenario
+		if existingEnvironment.Spec.Configuration.Env == nil {
+			copyEnvVar.Env = integrationTestScenario.Spec.Environment.Configuration.Env
+			break
+		}
+		for existingEnvVar := range existingEnvironment.Spec.Configuration.Env {
+			// envVar names are matching? overwrite existing environment with one from ITS
+			if integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name == copyEnvVar.Env[existingEnvVar].Name {
+				copyEnvVar.Env[existingEnvVar].Value = integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value
+			} else if (integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name != copyEnvVar.Env[existingEnvVar].Name) && (!contains(copyEnvVar, integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name)) {
 				// in case that EnvVar from IntegrationTestScenario is not matching any EnvVar from existingEnv, add this ITS EnvVar to coppied Environment
-				if !match && (existingEnvVar == len(existingEnvironment.Spec.Configuration.Env)-1) {
-					copyEnvVar.Env = append(copyEnvVar.Env, applicationapiv1alpha1.EnvVarPair{Name: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name, Value: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value})
-				}
+				copyEnvVar.Env = append(copyEnvVar.Env, applicationapiv1alpha1.EnvVarPair{Name: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name, Value: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value})
 			}
 		}
 	}
@@ -67,9 +65,9 @@ func NewCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.En
 			Tags:               []string{"ephemeral"},
 			DeploymentStrategy: applicationapiv1alpha1.DeploymentStrategy_Manual,
 			Configuration:      copyEnvVar,
-			UnstableConfigurationFields: &applicationapiv1alpha1.UnstableEnvironmentConfiguration{ //TO-DO change naming
+			UnstableConfigurationFields: &applicationapiv1alpha1.UnstableEnvironmentConfiguration{
 				KubernetesClusterCredentials: applicationapiv1alpha1.KubernetesClusterCredentials{
-					TargetNamespace:          integrationTestScenario.Name + "-" + id.String(), //Copied environment needs to hold name of (integrationScenario.Name + snapshot.Name + -UUID)
+					TargetNamespace:          integrationTestScenario.Name + "-" + id.String(),
 					APIURL:                   existingApiURL,
 					ClusterCredentialsSecret: existingClusterCreds,
 				},
@@ -79,6 +77,7 @@ func NewCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.En
 	return &CopiedEnvironment{copyOfEnvironment}
 }
 
+// WithIntegrationLabels adds IntegrationTestScenario name as label to the coppied environment.
 func (e *CopiedEnvironment) WithIntegrationLabels(integrationTestScenario *v1alpha1.IntegrationTestScenario) *CopiedEnvironment {
 	if e.ObjectMeta.Labels == nil {
 		e.ObjectMeta.Labels = map[string]string{}
@@ -89,6 +88,7 @@ func (e *CopiedEnvironment) WithIntegrationLabels(integrationTestScenario *v1alp
 
 }
 
+//WithApplicationSnapshot adds the name of snapshot as label to the coppied environment.
 func (e *CopiedEnvironment) WithApplicationSnapshot(snapshot *applicationapiv1alpha1.ApplicationSnapshot) *CopiedEnvironment {
 
 	if e.ObjectMeta.Labels == nil {
@@ -97,23 +97,4 @@ func (e *CopiedEnvironment) WithApplicationSnapshot(snapshot *applicationapiv1al
 	e.ObjectMeta.Labels["test.appstudio.openshift.io/snapshot"] = snapshot.Name
 
 	return e
-}
-
-//add lables from environment to binding (environment and binding should have same labels)
-//check if ITS has snapshot already
-
-func EnvironmentWithSnapshotAlreadyExists(snapshot *applicationapiv1alpha1.ApplicationSnapshot, integrationTestScenario *v1alpha1.IntegrationTestScenario, existingEnvironment *applicationapiv1alpha1.Environment) bool {
-	fmt.Println("KOZKABOZKA-SCENARIO:")
-	if labelValue, found := existingEnvironment.GetLabels()["test.appstudio.openshift.io/scenario"]; found && labelValue == snapshot.Name {
-		fmt.Println("TYTOK JE: TRUE")
-	}
-	fmt.Println(existingEnvironment.GetLabels()["test.appstudio.openshift.io/scenario"])
-	fmt.Println("KOZKABOZKA-SNAPSHOT:")
-	fmt.Println(existingEnvironment.GetLabels()["test.appstudio.openshift.io/snapshot"])
-	if existingEnvironment.ObjectMeta.Labels["test.appstudio.openshift.io/scenario"] == integrationTestScenario.Name && existingEnvironment.ObjectMeta.Labels["test.appstudio.openshift.io/snapshot"] == snapshot.Name {
-		return true
-	} else {
-		return false
-	}
-
 }
