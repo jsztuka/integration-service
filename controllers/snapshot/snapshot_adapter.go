@@ -156,6 +156,9 @@ func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error)
 	if integrationTestScenarios != nil {
 		for _, integrationTestScenario := range *integrationTestScenarios {
 			integrationTestScenario := integrationTestScenario //G601
+			if &integrationTestScenario.Spec.Environment == nil {
+				continue
+			}
 			for _, environment := range *allEnvironments {
 				//prevent creating already existing environments
 				if helpers.HasLabelWithValue(&environment, "test.appstudio.openshift.io/snapshot", a.snapshot.Name) && helpers.HasLabelWithValue(&environment, "test.appstudio.openshift.io/scenario", integrationTestScenario.Name) {
@@ -163,26 +166,26 @@ func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error)
 					return results.ContinueProcessing()
 				}
 			}
-			if integrationTestScenario.Spec.Environment.Name != "" {
-				//get the environmet according to environment name from integrationTestScenario
-				existingEnv := a.getEnvironmentFromIntegrationTestScenario(&integrationTestScenario)
 
-				//copy existing environment
-				err, coppyEnv := a.createCopyOfExistingEnvironment(existingEnv, a.snapshot.Namespace, &integrationTestScenario, a.snapshot)
+			//get the environmet according to environment name from integrationTestScenario
+			existingEnv := a.getEnvironmentFromIntegrationTestScenario(&integrationTestScenario)
 
-				if err != nil {
-					a.logger.Error(err, "Coppying of environment failed.")
-					return results.RequeueOnErrorOrStop(err)
-				}
+			//copy existing environment
+			err, coppyEnv := a.createCopyOfExistingEnvironment(existingEnv, a.snapshot.Namespace, &integrationTestScenario, a.snapshot)
 
-				components, err := a.getAllApplicationComponents(a.application)
-				if err != nil {
-					return results.RequeueWithError(err)
-				}
-
-				a.createApplicationSnapshotEnvironmentBindingForSnapshot(a.application, coppyEnv, a.snapshot, components)
+			if err != nil {
+				a.logger.Error(err, "Coppying of environment failed.")
+				return results.RequeueOnErrorOrStop(err)
 			}
+
+			components, err := a.getAllApplicationComponents(a.application)
+			if err != nil {
+				return results.RequeueWithError(err)
+			}
+
+			a.createApplicationSnapshotEnvironmentBindingForSnapshot(a.application, coppyEnv, a.snapshot, components)
 		}
+
 	}
 
 	return results.ContinueProcessing()
