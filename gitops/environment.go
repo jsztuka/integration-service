@@ -36,20 +36,21 @@ func NewCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.En
 
 	copyEnvVar := applicationapiv1alpha1.EnvironmentConfiguration{}
 	copyEnvVar = existingEnvironment.Spec.Configuration
-
-	for intEnvVars := range integrationTestScenario.Spec.Environment.Configuration.Env {
-		// if existing environment does not contain EnvVars, copy ones from IntegrationTestScenario
-		if existingEnvironment.Spec.Configuration.Env == nil {
-			copyEnvVar.Env = integrationTestScenario.Spec.Environment.Configuration.Env
-			break
-		}
-		for existingEnvVar := range existingEnvironment.Spec.Configuration.Env {
-			// envVar names are matching? overwrite existing environment with one from ITS
-			if integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name == copyEnvVar.Env[existingEnvVar].Name {
-				copyEnvVar.Env[existingEnvVar].Value = integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value
-			} else if (integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name != copyEnvVar.Env[existingEnvVar].Name) && (!contains(copyEnvVar, integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name)) {
-				// in case that EnvVar from IntegrationTestScenario is not matching any EnvVar from existingEnv, add this ITS EnvVar to coppied Environment
-				copyEnvVar.Env = append(copyEnvVar.Env, applicationapiv1alpha1.EnvVarPair{Name: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name, Value: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value})
+	if len(integrationTestScenario.Spec.Environment.Configuration.Env) != 0 {
+		for intEnvVars := range integrationTestScenario.Spec.Environment.Configuration.Env {
+			// if existing environment does not contain EnvVars, copy ones from IntegrationTestScenario
+			if existingEnvironment.Spec.Configuration.Env == nil {
+				copyEnvVar.Env = integrationTestScenario.Spec.Environment.Configuration.Env
+				break
+			}
+			for existingEnvVar := range existingEnvironment.Spec.Configuration.Env {
+				// envVar names are matching? overwrite existing environment with one from ITS
+				if integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name == copyEnvVar.Env[existingEnvVar].Name {
+					copyEnvVar.Env[existingEnvVar].Value = integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value
+				} else if (integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name != copyEnvVar.Env[existingEnvVar].Name) && (!contains(copyEnvVar, integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name)) {
+					// in case that EnvVar from IntegrationTestScenario is not matching any EnvVar from existingEnv, add this ITS EnvVar to coppied Environment
+					copyEnvVar.Env = append(copyEnvVar.Env, applicationapiv1alpha1.EnvVarPair{Name: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name, Value: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value})
+				}
 			}
 		}
 	}
@@ -70,6 +71,7 @@ func NewCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.En
 					TargetNamespace:          integrationTestScenario.Name + "-" + id.String(),
 					APIURL:                   existingApiURL,
 					ClusterCredentialsSecret: existingClusterCreds,
+					//integrationTestScenario.Name + "-" + id.String()
 				},
 			},
 		},
