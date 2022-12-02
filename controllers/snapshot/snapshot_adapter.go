@@ -138,6 +138,10 @@ func (a *Adapter) EnsureAllIntegrationTestPipelinesExist() (results.OperationRes
 //IntegrationTestScenarios get created, in case that environment is already created, provides
 //a message about this fact
 func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error) {
+	if gitops.HaveHACBSTestsFinished(a.snapshot) {
+		a.logger.Info("The Snapshot has finished testing.")
+		return results.ContinueProcessing()
+	}
 
 	integrationTestScenarios, err := helpers.GetAllIntegrationTestScenariosForApplication(a.client, a.context, a.application)
 
