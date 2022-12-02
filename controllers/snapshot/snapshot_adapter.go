@@ -19,6 +19,7 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -79,7 +80,7 @@ func (a *Adapter) EnsureAllIntegrationTestPipelinesExist() (results.OperationRes
 	if integrationTestScenarios != nil {
 		for _, integrationTestScenario := range *integrationTestScenarios {
 			integrationTestScenario := integrationTestScenario //G601
-			if &integrationTestScenario.Spec.Environment != nil {
+			if !reflect.ValueOf(integrationTestScenario.Spec.Environment).IsZero() {
 				//get the environmet according to environment name from integrationTestScenario
 				a.logger.Info("IntegrationTestScenario has environment defined, skipping creation of pipelinerun.", "IntegrationTestScenario: ", integrationTestScenario)
 				return results.ContinueProcessing()
@@ -160,7 +161,7 @@ func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error)
 	if integrationTestScenarios != nil {
 		for _, integrationTestScenario := range *integrationTestScenarios {
 			integrationTestScenario := integrationTestScenario //G601
-			if &integrationTestScenario.Spec.Environment == nil {
+			if reflect.ValueOf(integrationTestScenario.Spec.Environment).IsZero() {
 				continue
 			}
 			for _, environment := range *allEnvironments {
