@@ -278,6 +278,10 @@ var _ = Describe("Snapshot Adapter", Ordered, func() {
 		if requiredIntegrationTestScenarios != nil {
 			for _, requiredIntegrationTestScenario := range *requiredIntegrationTestScenarios {
 				requiredIntegrationTestScenario := requiredIntegrationTestScenario
+				if !reflect.ValueOf(requiredIntegrationTestScenario.Spec.Environment).IsZero() {
+					//get the environmet according to environment name from integrationTestScenario
+					continue
+				}
 
 				integrationPipelineRuns := &tektonv1beta1.PipelineRunList{}
 				opts := []client.ListOption{
