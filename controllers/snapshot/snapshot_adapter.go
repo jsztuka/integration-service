@@ -176,7 +176,7 @@ func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error)
 			existingEnv := a.getEnvironmentFromIntegrationTestScenario(&integrationTestScenario)
 
 			//copy existing environment
-			err, coppyEnv := a.createCopyOfExistingEnvironment(existingEnv, a.snapshot.Namespace, &integrationTestScenario, a.snapshot)
+			err, coppyEnv := a.createCopyOfExistingEnvironment(existingEnv, a.snapshot.Namespace, &integrationTestScenario, a.snapshot, a.application)
 
 			if err != nil {
 				a.logger.Error(err, "Coppying of environment failed.")
@@ -530,11 +530,18 @@ func (a *Adapter) updateExistingApplicationSnapshotEnvironmentBindingWithSnapsho
 //integrationTestScenario contains information about existing environment
 //snapshot is mainly used for adding labels
 //returns copy of already existing environment with updated envVars
-func (a *Adapter) createCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.Environment, namespace string, integrationTestScenario *v1alpha1.IntegrationTestScenario, applicationSnapshot *applicationapiv1alpha1.ApplicationSnapshot) (error, *applicationapiv1alpha1.Environment) {
+func (a *Adapter) createCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.Environment, namespace string, integrationTestScenario *v1alpha1.IntegrationTestScenario, applicationSnapshot *applicationapiv1alpha1.ApplicationSnapshot, application *applicationapiv1alpha1.Application) (error, *applicationapiv1alpha1.Environment) {
 	environment := gitops.NewCopyOfExistingEnvironment(existingEnvironment, namespace, integrationTestScenario, applicationSnapshot).
 		WithIntegrationLabels(integrationTestScenario).
 		WithApplicationSnapshot(applicationSnapshot).
 		AsEnvironment()
+
+	ref := ctrl.SetControllerReference(application, environment, a.client.Scheme())
+	if ref != nil {
+		a.logger.Error(ref, "Failed to set controller reference for environment!",
+			"application.Name: ", application.Name,
+			"environment.Name: ", environment.Name)
+	}
 
 	err := a.client.Create(a.context, environment)
 	if err != nil {
