@@ -90,7 +90,7 @@ func (e *CopiedEnvironment) WithIntegrationLabels(integrationTestScenario *v1alp
 
 }
 
-//WithApplicationSnapshot adds the name of snapshot as label to the coppied environment.
+// WithApplicationSnapshot adds the name of snapshot as label to the coppied environment.
 func (e *CopiedEnvironment) WithApplicationSnapshot(snapshot *applicationapiv1alpha1.ApplicationSnapshot) *CopiedEnvironment {
 
 	if e.ObjectMeta.Labels == nil {

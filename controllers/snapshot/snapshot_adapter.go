@@ -135,10 +135,11 @@ func (a *Adapter) EnsureAllIntegrationTestPipelinesExist() (results.OperationRes
 	return results.ContinueProcessing()
 }
 
-//EnsureCreationOfEnvironment makes sure that all envrionemnts that were requested via
-//IntegrationTestScenarios get created, in case that environment is already created, provides
-//a message about this fact
+// EnsureCreationOfEnvironment makes sure that all envrionemnts that were requested via
+// IntegrationTestScenarios get created, in case that environment is already created, provides
+// a message about this fact
 func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error) {
+	environmentFound := false
 	if gitops.HaveHACBSTestsFinished(a.snapshot) {
 		a.logger.Info("The Snapshot has finished testing.")
 		return results.ContinueProcessing()
@@ -168,10 +169,14 @@ func (a *Adapter) EnsureCreationOfEnvironment() (results.OperationResult, error)
 				//prevent creating already existing environments
 				if helpers.HasLabelWithValue(&environment, "test.appstudio.openshift.io/snapshot", a.snapshot.Name) && helpers.HasLabelWithValue(&environment, "test.appstudio.openshift.io/scenario", integrationTestScenario.Name) {
 					fmt.Println("ENV: " + environment.Name + "Already exists and contains snapshot: " + a.snapshot.Name + " and scenario: " + integrationTestScenario.Name)
-					return results.ContinueProcessing()
+					environmentFound = true
 				}
 			}
 
+			if environmentFound {
+				environmentFound = false
+				continue
+			}
 			//get the environmet according to environment name from integrationTestScenario
 			existingEnv := a.getEnvironmentFromIntegrationTestScenario(&integrationTestScenario)
 
@@ -526,10 +531,10 @@ func (a *Adapter) updateExistingApplicationSnapshotEnvironmentBindingWithSnapsho
 	return applicationSnapshotEnvironmentBinding, nil
 }
 
-//createCopyOfExistingEnvironment uses existing env as input, specifies namespace where the environment is situated,
-//integrationTestScenario contains information about existing environment
-//snapshot is mainly used for adding labels
-//returns copy of already existing environment with updated envVars
+// createCopyOfExistingEnvironment uses existing env as input, specifies namespace where the environment is situated,
+// integrationTestScenario contains information about existing environment
+// snapshot is mainly used for adding labels
+// returns copy of already existing environment with updated envVars
 func (a *Adapter) createCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.Environment, namespace string, integrationTestScenario *v1alpha1.IntegrationTestScenario, applicationSnapshot *applicationapiv1alpha1.ApplicationSnapshot, application *applicationapiv1alpha1.Application) (error, *applicationapiv1alpha1.Environment) {
 	environment := gitops.NewCopyOfExistingEnvironment(existingEnvironment, namespace, integrationTestScenario, applicationSnapshot).
 		WithIntegrationLabels(integrationTestScenario).
@@ -551,8 +556,8 @@ func (a *Adapter) createCopyOfExistingEnvironment(existingEnvironment *applicati
 	return err, environment
 }
 
-//getEnvironmentFromIntegrationTestScenario looks for already existing environment, if it exist it is returned, if not, nil is returned then together with
-//information about what went wrong
+// getEnvironmentFromIntegrationTestScenario looks for already existing environment, if it exist it is returned, if not, nil is returned then together with
+// information about what went wrong
 func (a *Adapter) getEnvironmentFromIntegrationTestScenario(integrationTestScenario *v1alpha1.IntegrationTestScenario) *applicationapiv1alpha1.Environment {
 	existingEnv := &applicationapiv1alpha1.Environment{}
 
