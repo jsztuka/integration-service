@@ -34,23 +34,25 @@ func NewCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.En
 	existingApiURL := existingEnvironment.Spec.UnstableConfigurationFields.KubernetesClusterCredentials.APIURL
 	existingClusterCreds := existingEnvironment.Spec.UnstableConfigurationFields.KubernetesClusterCredentials.ClusterCredentialsSecret
 
-	copyEnvVar := applicationapiv1alpha1.EnvironmentConfiguration{}
-	copyEnvVar = existingEnvironment.Spec.Configuration
-	if len(integrationTestScenario.Spec.Environment.Configuration.Env) != 0 {
+	copiedEnvConfiguration := applicationapiv1alpha1.EnvironmentConfiguration{}
+	copiedEnvConfiguration = *existingEnvironment.Spec.Configuration.DeepCopy()
+	if existingEnvironment.Spec.Configuration.Env == nil {
+		copiedEnvConfiguration.Env = integrationTestScenario.Spec.Environment.Configuration.Env
+	} else if len(integrationTestScenario.Spec.Environment.Configuration.Env) != 0 {
 		for intEnvVars := range integrationTestScenario.Spec.Environment.Configuration.Env {
 			// if existing environment does not contain EnvVars, copy ones from IntegrationTestScenario
-			if existingEnvironment.Spec.Configuration.Env == nil {
-				copyEnvVar.Env = integrationTestScenario.Spec.Environment.Configuration.Env
-				break
-			}
-			for existingEnvVar := range existingEnvironment.Spec.Configuration.Env {
+			envVarFound := false
+			for existingEnvVar := range copiedEnvConfiguration.Env {
 				// envVar names are matching? overwrite existing environment with one from ITS
-				if integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name == copyEnvVar.Env[existingEnvVar].Name {
-					copyEnvVar.Env[existingEnvVar].Value = integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value
-				} else if (integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name != copyEnvVar.Env[existingEnvVar].Name) && (!contains(copyEnvVar, integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name)) {
-					// in case that EnvVar from IntegrationTestScenario is not matching any EnvVar from existingEnv, add this ITS EnvVar to coppied Environment
-					copyEnvVar.Env = append(copyEnvVar.Env, applicationapiv1alpha1.EnvVarPair{Name: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name, Value: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value})
+				if integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name == copiedEnvConfiguration.Env[existingEnvVar].Name {
+					copiedEnvConfiguration.Env[existingEnvVar].Value = integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value
+					envVarFound = true
 				}
+
+			}
+			if !envVarFound {
+				// in case that EnvVar from IntegrationTestScenario is not matching any EnvVar from existingEnv, add this ITS EnvVar to coppied Environment
+				copiedEnvConfiguration.Env = append(copiedEnvConfiguration.Env, applicationapiv1alpha1.EnvVarPair{Name: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Name, Value: integrationTestScenario.Spec.Environment.Configuration.Env[intEnvVars].Value})
 			}
 		}
 	}
@@ -65,7 +67,7 @@ func NewCopyOfExistingEnvironment(existingEnvironment *applicationapiv1alpha1.En
 			DisplayName:        existingEnvironment.Name + "-" + integrationTestScenario.Name,
 			Tags:               []string{"ephemeral"},
 			DeploymentStrategy: applicationapiv1alpha1.DeploymentStrategy_Manual,
-			Configuration:      copyEnvVar,
+			Configuration:      copiedEnvConfiguration,
 			UnstableConfigurationFields: &applicationapiv1alpha1.UnstableEnvironmentConfiguration{
 				KubernetesClusterCredentials: applicationapiv1alpha1.KubernetesClusterCredentials{
 					TargetNamespace:          integrationTestScenario.Name + "-" + id.String(),

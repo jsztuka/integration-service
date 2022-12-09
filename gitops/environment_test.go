@@ -48,7 +48,7 @@ var _ = Describe("Gitops functions for managing ApplicationSnapshots", Ordered, 
 					Env: []applicationapiv1alpha1.EnvVarPair{
 						{
 							Name:  "VAR_NAME",
-							Value: "VAR_VALUE_INT",
+							Value: "VAR_VALUE_ENV",
 						},
 						{
 							Name:  "VAR_NAME_INT",
@@ -259,7 +259,7 @@ var _ = Describe("Gitops functions for managing ApplicationSnapshots", Ordered, 
 		It("existing env has envVars defined, ITS has NO envVar defined, copied env should have envVar exisitng env", func() {
 			Expect(copiedEnvWithEnvVarsITS.Spec.Configuration.Env).To(Equal(envWithEnvVars.Spec.Configuration.Env))
 		})
-		It("existing env has envVars defines, ITS has envVars defined, copied env should have updated envVars from existing evironment and new ones from ITS", func() {
+		It("existing env has envVars defines, ITS has envVars defined, copied env should have apended envVars from existing evironment and new ones from ITS", func() {
 			Expect(copiedEnvWithEnvVarsDiff.Spec.Configuration.Env).To(Equal(expectEnv.Spec.Configuration.Env))
 		})
 
