@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v2alpha1
 
 import (
 	applicationapiv1alpha1 "github.com/redhat-appstudio/application-api/api/v1alpha1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -39,6 +40,8 @@ type IntegrationTestScenarioSpec struct {
 	Environment TestEnvironment `json:"environment,omitempty"`
 	// Contexts where this IntegrationTestScenario can be applied
 	Contexts []TestContext `json:"contexts,omitempty"`
+	// Resolver corresponds to user-defined resolver, git or bundle
+	Resolver tektonv1beta1.ResolverRef `json:"resolver,omitempty"`
 }
 
 // IntegrationTestScenarioStatus defines the observed state of IntegrationTestScenario
@@ -69,7 +72,6 @@ type TestContext struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Application",type=string,JSONPath=`.spec.application`
-// +kubebuilder:storageversion
 
 // IntegrationTestScenario is the Schema for the integrationtestscenarios API
 type IntegrationTestScenario struct {
