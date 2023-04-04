@@ -33,7 +33,7 @@ var _ = Describe("IntegrationTestScenario type", func() {
 	BeforeEach(func() {
 		integrationTestScenario = &IntegrationTestScenario{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: "appstudio.redhat.com/v1beta1",
+				APIVersion: "appstudio.redhat.com/v1alpha1",
 				Kind:       "IntegrationTestScenario",
 			},
 			ObjectMeta: metav1.ObjectMeta{

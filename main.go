@@ -39,7 +39,6 @@ import (
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
 	integrationv1alpha1 "github.com/redhat-appstudio/integration-service/api/v1alpha1"
-	cachev1beta1 "github.com/redhat-appstudio/integration-service/api/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -55,7 +54,6 @@ func init() {
 	utilruntime.Must(tektonv1beta1.AddToScheme(scheme))
 	utilruntime.Must(releasev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(pacv1alpha1.AddToScheme(scheme))
-	utilruntime.Must(cachev1beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -92,10 +90,6 @@ func main() {
 	err = controllers.SetupControllers(mgr)
 	if err != nil {
 		setupLog.Error(err, "unable to setup controllers")
-		os.Exit(1)
-	}
-	if err = (&cachev1beta1.IntegrationTestScenario{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "IntegrationTestScenario")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
