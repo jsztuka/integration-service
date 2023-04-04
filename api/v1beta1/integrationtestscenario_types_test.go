@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2alpha1
+package v1beta1
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -33,7 +33,7 @@ var _ = Describe("IntegrationTestScenario type", func() {
 	BeforeEach(func() {
 		integrationTestScenario = &IntegrationTestScenario{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: "appstudio.redhat.com/v2alpha1",
+				APIVersion: "appstudio.redhat.com/v1beta1",
 				Kind:       "IntegrationTestScenario",
 			},
 			ObjectMeta: metav1.ObjectMeta{

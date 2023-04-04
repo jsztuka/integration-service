@@ -1,0 +1,27 @@
+# permissions for end users to view integrationtestscenarios.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: integrationtestscenario-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: integration-service
+    app.kubernetes.io/part-of: integration-service
+    app.kubernetes.io/managed-by: kustomize
+  name: integrationtestscenario-viewer-role
+rules:
+- apiGroups:
+  - cache.redhat.com
+  resources:
+  - integrationtestscenarios
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cache.redhat.com
+  resources:
+  - integrationtestscenarios/status
+  verbs:
+  - get

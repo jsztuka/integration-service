@@ -210,7 +210,7 @@ spec:
     - jsonPath: .spec.application
       name: Application
       type: string
-    name: v2alpha1
+    name: v1beta1
     schema:
       openAPIV3Schema:
         description: IntegrationTestScenario is the Schema for the integrationtestscenarios
@@ -313,7 +313,8 @@ spec:
                 description: Release Tekton Pipeline to execute
                 type: string
               resolver:
-                description: Resolver corresponds to user-defined resolver
+                description: Resolver corresponds to user-defined resolver, git or
+                  bundle
                 properties:
                   params:
                     description: Params contains the parameters used to identify the
