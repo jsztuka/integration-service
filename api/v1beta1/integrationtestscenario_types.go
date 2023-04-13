@@ -36,7 +36,7 @@ type IntegrationTestScenarioSpec struct {
 	// Params to pass to the pipeline
 	Params []PipelineParameter `json:"params,omitempty"`
 	// Environment that will be utilized by the test pipeline
-	Environment TestEnvironment `json:"environment,omitempty"`
+	Environments TestEnvironment `json:"environment,omitempty"`
 	// Contexts where this IntegrationTestScenario can be applied
 	Contexts []TestContext `json:"contexts,omitempty"`
 }

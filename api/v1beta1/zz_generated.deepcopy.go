@@ -95,7 +95,7 @@ func (in *IntegrationTestScenarioSpec) DeepCopyInto(out *IntegrationTestScenario
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	in.Environment.DeepCopyInto(&out.Environment)
+	in.Environments.DeepCopyInto(&out.Environments)
 	if in.Contexts != nil {
 		in, out := &in.Contexts, &out.Contexts
 		*out = make([]TestContext, len(*in))
