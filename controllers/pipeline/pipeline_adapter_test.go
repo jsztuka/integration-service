@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"time"
 
-	integrationv1alpha1 "github.com/redhat-appstudio/integration-service/api/v1alpha1"
+	integrationv1beta1 "github.com/redhat-appstudio/integration-service/api/v1beta1"
 	"github.com/redhat-appstudio/integration-service/gitops"
 	"github.com/redhat-appstudio/integration-service/helpers"
 	"knative.dev/pkg/apis"
@@ -74,7 +74,7 @@ var _ = Describe("Pipeline Adapter", Ordered, func() {
 		hasComp2                 *applicationapiv1alpha1.Component
 		hasApp                   *applicationapiv1alpha1.Application
 		hasSnapshot              *applicationapiv1alpha1.Snapshot
-		integrationTestScenario  *integrationv1alpha1.IntegrationTestScenario
+		integrationTestScenario  *integrationv1beta1.IntegrationTestScenario
 	)
 	const (
 		SampleRepoLink = "https://github.com/devfile-samples/devfile-sample-java-springboot-basic"
@@ -163,7 +163,7 @@ var _ = Describe("Pipeline Adapter", Ordered, func() {
 		}
 		Expect(k8sClient.Create(ctx, hasSnapshot)).Should(Succeed())
 
-		integrationTestScenario = &integrationv1alpha1.IntegrationTestScenario{
+		integrationTestScenario = &integrationv1beta1.IntegrationTestScenario{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "example-pass",
 				Namespace: "default",
@@ -172,15 +172,22 @@ var _ = Describe("Pipeline Adapter", Ordered, func() {
 					"test.appstudio.openshift.io/optional": "false",
 				},
 			},
-			Spec: integrationv1alpha1.IntegrationTestScenarioSpec{
+			Spec: integrationv1beta1.IntegrationTestScenarioSpec{
 				Application: hasApp.Name,
-				Bundle:      "quay.io/redhat-appstudio/example-tekton-bundle:component-pipeline-pass",
-				Pipeline:    "component-pipeline-pass",
-				Environment: integrationv1alpha1.TestEnvironment{
+				Environment: integrationv1beta1.TestEnvironment{
 					Name: "envname",
 					Type: "POC",
 					Configuration: applicationapiv1alpha1.EnvironmentConfiguration{
 						Env: []applicationapiv1alpha1.EnvVarPair{},
+					},
+				},
+				ResolverRef: integrationv1beta1.ResolverRef{
+					Resolver: "bundle",
+					Params: []integrationv1beta1.ResolverParameter{
+						{
+							Name:  "name",
+							Value: "mojejmeno",
+						},
 					},
 				},
 			},

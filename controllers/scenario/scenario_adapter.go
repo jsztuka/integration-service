@@ -24,7 +24,7 @@ import (
 
 	"github.com/go-logr/logr"
 	applicationapiv1alpha1 "github.com/redhat-appstudio/application-api/api/v1alpha1"
-	"github.com/redhat-appstudio/integration-service/api/v1alpha1"
+	"github.com/redhat-appstudio/integration-service/api/v1beta1"
 	"github.com/redhat-appstudio/integration-service/gitops"
 	"github.com/redhat-appstudio/operator-goodies/reconciler"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,14 +33,14 @@ import (
 // Adapter holds the objects needed to reconcile a Release.
 type Adapter struct {
 	application *applicationapiv1alpha1.Application
-	scenario    *v1alpha1.IntegrationTestScenario
+	scenario    *v1beta1.IntegrationTestScenario
 	logger      logr.Logger
 	client      client.Client
 	context     context.Context
 }
 
 // NewAdapter creates and returns an Adapter instance.
-func NewAdapter(application *applicationapiv1alpha1.Application, scenario *v1alpha1.IntegrationTestScenario, logger logr.Logger, client client.Client,
+func NewAdapter(application *applicationapiv1alpha1.Application, scenario *v1beta1.IntegrationTestScenario, logger logr.Logger, client client.Client,
 	context context.Context) *Adapter {
 	return &Adapter{
 		application: application,
@@ -135,7 +135,7 @@ func (a *Adapter) EnsureCreatedScenarioIsValid() (reconciler.OperationResult, er
 }
 
 // SetSnapshotIntegrationStatusAsInvalid sets the HACBS integration status condition for the Snapshot to invalid.
-func SetScenarioIntegrationStatusAsInvalid(scenario *v1alpha1.IntegrationTestScenario, message string) {
+func SetScenarioIntegrationStatusAsInvalid(scenario *v1beta1.IntegrationTestScenario, message string) {
 	meta.SetStatusCondition(&scenario.Status.Conditions, metav1.Condition{
 		Type:    gitops.IntegrationTestScenarioValid,
 		Status:  metav1.ConditionFalse,
@@ -145,7 +145,7 @@ func SetScenarioIntegrationStatusAsInvalid(scenario *v1alpha1.IntegrationTestSce
 }
 
 // SetSnapshotIntegrationStatusAsValid sets the HACBS integration status condition for the Snapshot to valid.
-func SetScenarioIntegrationStatusAsValid(scenario *v1alpha1.IntegrationTestScenario, message string) {
+func SetScenarioIntegrationStatusAsValid(scenario *v1beta1.IntegrationTestScenario, message string) {
 	meta.SetStatusCondition(&scenario.Status.Conditions, metav1.Condition{
 		Type:    gitops.IntegrationTestScenarioValid,
 		Status:  metav1.ConditionTrue,

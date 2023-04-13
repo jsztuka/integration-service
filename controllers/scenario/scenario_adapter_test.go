@@ -10,7 +10,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	applicationapiv1alpha1 "github.com/redhat-appstudio/application-api/api/v1alpha1"
-	integrationv1alpha1 "github.com/redhat-appstudio/integration-service/api/v1alpha1"
+	integrationv1beta1 "github.com/redhat-appstudio/integration-service/api/v1beta1"
 	"github.com/redhat-appstudio/integration-service/gitops"
 
 	corev1 "k8s.io/api/core/v1"
@@ -27,8 +27,8 @@ var _ = Describe("Scenario Adapter", Ordered, func() {
 	var (
 		adapter                 *Adapter
 		hasApp                  *applicationapiv1alpha1.Application
-		integrationTestScenario *integrationv1alpha1.IntegrationTestScenario
-		invalidScenario         *integrationv1alpha1.IntegrationTestScenario
+		integrationTestScenario *integrationv1beta1.IntegrationTestScenario
+		invalidScenario         *integrationv1beta1.IntegrationTestScenario
 		envNamespace            string = DefaultNamespace
 		env                     applicationapiv1alpha1.Environment
 	)
@@ -48,7 +48,7 @@ var _ = Describe("Scenario Adapter", Ordered, func() {
 
 		Expect(k8sClient.Create(ctx, hasApp)).Should(Succeed())
 
-		integrationTestScenario = &integrationv1alpha1.IntegrationTestScenario{
+		integrationTestScenario = &integrationv1beta1.IntegrationTestScenario{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "example-pass",
 				Namespace: "default",
@@ -57,22 +57,29 @@ var _ = Describe("Scenario Adapter", Ordered, func() {
 					"test.appstudio.openshift.io/optional": "false",
 				},
 			},
-			Spec: integrationv1alpha1.IntegrationTestScenarioSpec{
+			Spec: integrationv1beta1.IntegrationTestScenarioSpec{
 				Application: "application-sample",
-				Bundle:      "quay.io/kpavic/test-bundle:component-pipeline-pass",
-				Pipeline:    "component-pipeline-pass",
-				Environment: integrationv1alpha1.TestEnvironment{
+				Environment: integrationv1beta1.TestEnvironment{
 					Name: "envname",
 					Type: "POC",
 					Configuration: applicationapiv1alpha1.EnvironmentConfiguration{
 						Env: []applicationapiv1alpha1.EnvVarPair{},
 					},
 				},
+				ResolverRef: integrationv1beta1.ResolverRef{
+					Resolver: "bundle",
+					Params: []integrationv1beta1.ResolverParameter{
+						{
+							Name:  "name",
+							Value: "mojejmeno",
+						},
+					},
+				},
 			},
 		}
 		Expect(k8sClient.Create(ctx, integrationTestScenario)).Should(Succeed())
 
-		invalidScenario = &integrationv1alpha1.IntegrationTestScenario{
+		invalidScenario = &integrationv1beta1.IntegrationTestScenario{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "example-fail",
 				Namespace: "default",
@@ -81,15 +88,22 @@ var _ = Describe("Scenario Adapter", Ordered, func() {
 					"test.appstudio.openshift.io/optional": "false",
 				},
 			},
-			Spec: integrationv1alpha1.IntegrationTestScenarioSpec{
+			Spec: integrationv1beta1.IntegrationTestScenarioSpec{
 				Application: "perpetum-mobile",
-				Bundle:      "quay.io/kpavic/test-bundle:component-pipeline-pass",
-				Pipeline:    "component-pipeline-pass",
-				Environment: integrationv1alpha1.TestEnvironment{
+				Environment: integrationv1beta1.TestEnvironment{
 					Name: "invEnv",
 					Type: "POC",
 					Configuration: applicationapiv1alpha1.EnvironmentConfiguration{
 						Env: []applicationapiv1alpha1.EnvVarPair{},
+					},
+				},
+				ResolverRef: integrationv1beta1.ResolverRef{
+					Resolver: "bundle",
+					Params: []integrationv1beta1.ResolverParameter{
+						{
+							Name:  "name",
+							Value: "mojejmeno",
+						},
 					},
 				},
 			},
