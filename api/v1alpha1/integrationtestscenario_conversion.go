@@ -37,66 +37,74 @@ func (r *IntegrationTestScenario) SetupWebhookWithManager(mgr ctrl.Manager) erro
 func (src *IntegrationTestScenario) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta1.IntegrationTestScenario)
 	dst.ObjectMeta = src.ObjectMeta
-	dst.Spec.Environments = v1beta1.TestEnvironment(src.Spec.Environment)
-	// dst.Spec.Resolver = tektonv1beta1.ResolverRef{
-	// 	Resolver: "bundle",
-	// 	Params: []tektonv1beta1.Param{
-	// 		{
-	// 			Name: "bundle",
-	// 			Value: tektonv1beta1.ParamValue{
-	// 				Type:      tektonv1beta1.ParamTypeString,
-	// 				StringVal: src.Spec.Bundle,
-	// 			},
-	// 		},
-	// 		{
-	// 			Name: "name",
-	// 			Value: tektonv1beta1.ParamValue{
-	// 				Type:      tektonv1beta1.ParamTypeString,
-	// 				StringVal: src.Spec.Pipeline,
-	// 			},
-	// 		},
-	// 		{
-	// 			Name: "kind",
-	// 			Value: tektonv1beta1.ParamValue{
-	// 				Type:      tektonv1beta1.ParamTypeString,
-	// 				StringVal: "pipeline",
-	// 			},
-	// 		},
-	// 	},
-	// }
+	dst.Spec.Application = src.Spec.Application
+	//dst.Spec.Environment = v1beta1.TestEnvironment(src.Spec.Environment)
+	dst.Spec.ResolverRef = v1beta1.ResolverRef{
+		Resolver: "bundle",
+		Params: []v1beta1.ResolverParameter{
+			{
+				Name:  "bundle",
+				Value: src.Spec.Bundle,
+				// tektonv1beta1.ParamValue{
+				// 	Type:      tektonv1beta1.ParamTypeString,
+				// 	StringVal: src.Spec.Bundle,
+				// },
+			},
+			{
+				Name:  "name",
+				Value: src.Spec.Pipeline,
+				// tektonv1beta1.ParamValue{
+				// 	Type:      tektonv1beta1.ParamTypeString,
+				// 	StringVal: src.Spec.Pipeline,
+				// },
+			},
+			{
+				Name:  "kind",
+				Value: "pipeline",
+				// Value: tektonv1beta1.ParamValue{
+				// 	Type:      tektonv1beta1.ParamTypeString,
+				// 	StringVal: "pipeline",
+				// },
+			},
+		},
+	}
 	return nil
 }
 
 func (dst *IntegrationTestScenario) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.IntegrationTestScenario)
 	dst.ObjectMeta = src.ObjectMeta
-	dst.Spec.Environment = TestEnvironment(src.Spec.Environments)
-	// src.Spec.Resolver = tektonv1beta1.ResolverRef{
-	// 	Resolver: "bundle",
-	// 	Params: []tektonv1beta1.Param{
-	// 		{
-	// 			Name: "bundle",
-	// 			Value: tektonv1beta1.ParamValue{
-	// 				Type:      tektonv1beta1.ParamTypeString,
-	// 				StringVal: dst.Spec.Bundle,
-	// 			},
-	// 		},
-	// 		{
-	// 			Name: "name",
-	// 			Value: tektonv1beta1.ParamValue{
-	// 				Type:      tektonv1beta1.ParamTypeString,
-	// 				StringVal: dst.Spec.Pipeline,
-	// 			},
-	// 		},
-	// 		{
-	// 			Name: "kind",
-	// 			Value: tektonv1beta1.ParamValue{
-	// 				Type:      tektonv1beta1.ParamTypeString,
-	// 				StringVal: "pipeline",
-	// 			},
-	// 		},
-	// 	},
-	// }
+	dst.Spec.Application = src.Spec.Application
+	//dst.Spec.Environment = TestEnvironment(src.Spec.Environment)
+	src.Spec.ResolverRef = v1beta1.ResolverRef{
+		Resolver: "bundle",
+		Params: []v1beta1.ResolverParameter{
+			{
+				Name:  "bundle",
+				Value: dst.Spec.Bundle,
+				// tektonv1beta1.ParamValue{
+				// 	Type:      tektonv1beta1.ParamTypeString,
+				// 	StringVal: dst.Spec.Bundle,
+				// },
+			},
+			{
+				Name:  "name",
+				Value: dst.Spec.Pipeline,
+				// tektonv1beta1.ParamValue{
+				// 	Type:      tektonv1beta1.ParamTypeString,
+				// 	StringVal: dst.Spec.Pipeline,
+				// },
+			},
+			{
+				Name:  "kind",
+				Value: "pipeline",
+				// tektonv1beta1.ParamValue{
+				// 	Type:      tektonv1beta1.ParamTypeString,
+				// 	StringVal: "pipeline",
+				// },
+			},
+		},
+	}
 	return nil
 }
 

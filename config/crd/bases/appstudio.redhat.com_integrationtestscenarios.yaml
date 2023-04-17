@@ -236,9 +236,6 @@ spec:
                 description: Application that's associated with the IntegrationTestScenario
                 pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                 type: string
-              bundle:
-                description: Tekton Bundle where to find the pipeline
-                type: string
               contexts:
                 description: Contexts where this IntegrationTestScenario can be applied
                 items:
@@ -309,13 +306,41 @@ spec:
                   - name
                   type: object
                 type: array
-              pipeline:
-                description: Release Tekton Pipeline to execute
-                type: string
+              resolverRef:
+                description: Tekton Resolver where to store the Tekton resolverRef
+                  trigger Tekton pipeline used to refer to a Pipeline or Task in a
+                  remote location like a git repo.
+                properties:
+                  params:
+                    description: Params contains the parameters used to identify the
+                      referenced Tekton resource. Example entries might include "repo"
+                      or "path" but the set of params ultimately depends on the chosen
+                      resolver.
+                    items:
+                      description: ResolverParameter contains the name and values
+                        used to identify the referenced Tekton resource
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
+                      required:
+                      - name
+                      - value
+                      type: object
+                    type: array
+                  resolver:
+                    description: Resolver is the name of the resolver that should
+                      perform resolution of the referenced Tekton resource, such as
+                      "git" or "bundle"..
+                    type: string
+                required:
+                - params
+                - resolver
+                type: object
             required:
             - application
-            - bundle
-            - pipeline
+            - resolverRef
             type: object
           status:
             description: IntegrationTestScenarioStatus defines the observed state
