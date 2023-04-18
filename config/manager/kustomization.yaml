@@ -15,4 +15,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/jsztuka/integration-service
-  newTag: v0.0.4
+  newTag: v0.0.5

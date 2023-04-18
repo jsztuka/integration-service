@@ -33,11 +33,19 @@ func (r *IntegrationTestScenario) SetupWebhookWithManager(mgr ctrl.Manager) erro
 }
 
 // Hub marks this type as a conversion hub.
-// ConvertTo converts this Memcached to the Hub version (v2alpha1).
+// ConvertTo converts this ITS to the Hub version (v1beta1).
 func (src *IntegrationTestScenario) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta1.IntegrationTestScenario)
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec.Application = src.Spec.Application
+	if &src.Spec.Environment != nil {
+		dst.Spec.Environment = v1beta1.TestEnvironment(src.Spec.Environment)
+	}
+	if src.Spec.Params != nil {
+		for _, par := range src.Spec.Params {
+			dst.Spec.Params = append(dst.Spec.Params, par)
+		}
+	}
 	//dst.Spec.Environment = v1beta1.TestEnvironment(src.Spec.Environment)
 	dst.Spec.ResolverRef = v1beta1.ResolverRef{
 		Resolver: "bundle",
@@ -45,26 +53,14 @@ func (src *IntegrationTestScenario) ConvertTo(dstRaw conversion.Hub) error {
 			{
 				Name:  "bundle",
 				Value: src.Spec.Bundle,
-				// tektonv1beta1.ParamValue{
-				// 	Type:      tektonv1beta1.ParamTypeString,
-				// 	StringVal: src.Spec.Bundle,
-				// },
 			},
 			{
 				Name:  "name",
 				Value: src.Spec.Pipeline,
-				// tektonv1beta1.ParamValue{
-				// 	Type:      tektonv1beta1.ParamTypeString,
-				// 	StringVal: src.Spec.Pipeline,
-				// },
 			},
 			{
 				Name:  "kind",
 				Value: "pipeline",
-				// Value: tektonv1beta1.ParamValue{
-				// 	Type:      tektonv1beta1.ParamTypeString,
-				// 	StringVal: "pipeline",
-				// },
 			},
 		},
 	}
@@ -75,33 +71,23 @@ func (dst *IntegrationTestScenario) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.IntegrationTestScenario)
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec.Application = src.Spec.Application
-	//dst.Spec.Environment = TestEnvironment(src.Spec.Environment)
+	if &dst.Spec.Environment != nil {
+		src.Spec.Environment = v1beta1.TestEnvironment(dst.Spec.Environment)
+	}
 	src.Spec.ResolverRef = v1beta1.ResolverRef{
 		Resolver: "bundle",
 		Params: []v1beta1.ResolverParameter{
 			{
 				Name:  "bundle",
 				Value: dst.Spec.Bundle,
-				// tektonv1beta1.ParamValue{
-				// 	Type:      tektonv1beta1.ParamTypeString,
-				// 	StringVal: dst.Spec.Bundle,
-				// },
 			},
 			{
 				Name:  "name",
 				Value: dst.Spec.Pipeline,
-				// tektonv1beta1.ParamValue{
-				// 	Type:      tektonv1beta1.ParamTypeString,
-				// 	StringVal: dst.Spec.Pipeline,
-				// },
 			},
 			{
 				Name:  "kind",
 				Value: "pipeline",
-				// tektonv1beta1.ParamValue{
-				// 	Type:      tektonv1beta1.ParamTypeString,
-				// 	StringVal: "pipeline",
-				// },
 			},
 		},
 	}
