@@ -43,10 +43,14 @@ func (src *IntegrationTestScenario) ConvertTo(dstRaw conversion.Hub) error {
 	}
 	if src.Spec.Params != nil {
 		for _, par := range src.Spec.Params {
-			dst.Spec.Params = append(dst.Spec.Params, par)
+			dst.Spec.Params = append(dst.Spec.Params, v1beta1.PipelineParameter(par))
 		}
 	}
-	//dst.Spec.Environment = v1beta1.TestEnvironment(src.Spec.Environment)
+	if src.Spec.Contexts != nil {
+		for _, par := range src.Spec.Contexts {
+			dst.Spec.Contexts = append(dst.Spec.Contexts, v1beta1.TestContext(par))
+		}
+	}
 	dst.Spec.ResolverRef = v1beta1.ResolverRef{
 		Resolver: "bundle",
 		Params: []v1beta1.ResolverParameter{
@@ -73,6 +77,16 @@ func (dst *IntegrationTestScenario) ConvertFrom(srcRaw conversion.Hub) error {
 	dst.Spec.Application = src.Spec.Application
 	if &dst.Spec.Environment != nil {
 		src.Spec.Environment = v1beta1.TestEnvironment(dst.Spec.Environment)
+	}
+	if src.Spec.Params != nil {
+		for _, par := range src.Spec.Params {
+			src.Spec.Params = append(src.Spec.Params, par)
+		}
+	}
+	if src.Spec.Contexts != nil {
+		for _, par := range src.Spec.Contexts {
+			src.Spec.Contexts = append(src.Spec.Contexts, par)
+		}
 	}
 	src.Spec.ResolverRef = v1beta1.ResolverRef{
 		Resolver: "bundle",
