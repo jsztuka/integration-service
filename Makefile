@@ -182,23 +182,23 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 docker-build: test ## Build docker image with the manager.
 	docker build --build-arg ENABLE_WEBHOOKS=${ENABLE_WEBHOOKS} -t ${IMG} .
 
-.PHONY: docker-push
-docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
+# .PHONY: docker-push
+# docker-push: ## Push docker image with the manager.
+# 	docker push ${IMG}
 
-install-cert: ## Install cert manager for webhooks
-	kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
+# install-cert: ## Install cert manager for webhooks
+# 	kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
 
-uninstall-cert:
-	kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
+# uninstall-cert:
+# 	kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
 
-LOCAL_CERT_DIR := /tmp/k8s-webhook-server/serving-certs
-.PHONY: create-local-certs
-create-local-certs: ## Create the local certs required for running the operator manually
-	mkdir -p $(LOCAL_CERT_DIR)
-	openssl genrsa -out $(LOCAL_CERT_DIR)/tls.key
-	openssl req -key $(LOCAL_CERT_DIR)/tls.key -new -out $(LOCAL_CERT_DIR)/tls.csr -subj "/C=XX/L=Default City/O=Red Hat"
-	openssl x509 -signkey $(LOCAL_CERT_DIR)/tls.key -in $(LOCAL_CERT_DIR)/tls.csr -req -days 365 -out $(LOCAL_CERT_DIR)/tls.crt
+# LOCAL_CERT_DIR := /tmp/k8s-webhook-server/serving-certs
+# .PHONY: create-local-certs
+# create-local-certs: ## Create the local certs required for running the operator manually
+# 	mkdir -p $(LOCAL_CERT_DIR)
+# 	openssl genrsa -out $(LOCAL_CERT_DIR)/tls.key
+# 	openssl req -key $(LOCAL_CERT_DIR)/tls.key -new -out $(LOCAL_CERT_DIR)/tls.csr -subj "/C=XX/L=Default City/O=Red Hat"
+# 	openssl x509 -signkey $(LOCAL_CERT_DIR)/tls.key -in $(LOCAL_CERT_DIR)/tls.csr -req -days 365 -out $(LOCAL_CERT_DIR)/tls.crt
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
