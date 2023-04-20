@@ -4,7 +4,8 @@
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= 0.0.1
-
+CERT_MANAGER_VERSION ?= v1.8.0
+ENABLE_WEBHOOKS ?= true
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
@@ -176,6 +177,28 @@ $(KUSTOMIZE): $(LOCALBIN)
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+
+.PHONY: docker-build
+docker-build: test ## Build docker image with the manager.
+	docker build --build-arg ENABLE_WEBHOOKS=${ENABLE_WEBHOOKS} -t ${IMG} .
+
+.PHONY: docker-push
+docker-push: ## Push docker image with the manager.
+	docker push ${IMG}
+
+install-cert: ## Install cert manager for webhooks
+	kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
+
+uninstall-cert:
+	kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
+
+LOCAL_CERT_DIR := /tmp/k8s-webhook-server/serving-certs
+.PHONY: create-local-certs
+create-local-certs: ## Create the local certs required for running the operator manually
+	mkdir -p $(LOCAL_CERT_DIR)
+	openssl genrsa -out $(LOCAL_CERT_DIR)/tls.key
+	openssl req -key $(LOCAL_CERT_DIR)/tls.key -new -out $(LOCAL_CERT_DIR)/tls.csr -subj "/C=XX/L=Default City/O=Red Hat"
+	openssl x509 -signkey $(LOCAL_CERT_DIR)/tls.key -in $(LOCAL_CERT_DIR)/tls.csr -req -days 365 -out $(LOCAL_CERT_DIR)/tls.crt
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
