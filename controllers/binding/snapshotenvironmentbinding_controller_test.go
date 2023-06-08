@@ -178,7 +178,7 @@ var _ = Describe("BindingController", func() {
 					},
 				},
 				Environment: v1beta1.TestEnvironment{
-					Name: "envname",
+					Name: "envname-int",
 					Type: "POC",
 					Configuration: &applicationapiv1alpha1.EnvironmentConfiguration{
 						Env: []applicationapiv1alpha1.EnvVarPair{},
