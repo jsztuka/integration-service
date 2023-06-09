@@ -15,13 +15,12 @@ webhooks:
       namespace: system
       path: /mutate-appstudio-redhat-com-v1alpha1-integrationtestscenario
   failurePolicy: Fail
-  name: mapplication.kb.io
+  name: mintegration.kb.io
   rules:
   - apiGroups:
     - appstudio.redhat.com
     apiVersions:
     - v1alpha1
-    - v1beta1
     operations:
     - CREATE
     - UPDATE
