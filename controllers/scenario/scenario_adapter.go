@@ -21,14 +21,13 @@ import (
 	"reflect"
 
 	applicationapiv1alpha1 "github.com/redhat-appstudio/application-api/api/v1alpha1"
-	"github.com/redhat-appstudio/integration-service/api/v1beta1"
+	"github.com/redhat-appstudio/integration-service/api/v1beta2"
 	"github.com/redhat-appstudio/integration-service/gitops"
 	h "github.com/redhat-appstudio/integration-service/helpers"
 	"github.com/redhat-appstudio/integration-service/loader"
 	"github.com/redhat-appstudio/operator-toolkit/controller"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -36,7 +35,7 @@ import (
 // Adapter holds the objects needed to reconcile a Release.
 type Adapter struct {
 	application *applicationapiv1alpha1.Application
-	scenario    *v1beta1.IntegrationTestScenario
+	scenario    *v1beta2.IntegrationTestScenario
 	logger      h.IntegrationLogger
 	loader      loader.ObjectLoader
 	client      client.Client
@@ -44,7 +43,7 @@ type Adapter struct {
 }
 
 // NewAdapter creates and returns an Adapter instance.
-func NewAdapter(application *applicationapiv1alpha1.Application, scenario *v1beta1.IntegrationTestScenario, logger h.IntegrationLogger, loader loader.ObjectLoader, client client.Client,
+func NewAdapter(application *applicationapiv1alpha1.Application, scenario *v1beta2.IntegrationTestScenario, logger h.IntegrationLogger, loader loader.ObjectLoader, client client.Client,
 	context context.Context) *Adapter {
 	return &Adapter{
 		application: application,
@@ -92,34 +91,7 @@ func (a *Adapter) EnsureCreatedScenarioIsValid() (controller.OperationResult, er
 			a.logger.Error(err, "Failed to update Scenario")
 			return controller.RequeueWithError(err)
 		}
-
-	}
-	// Checks if scenario has environment defined
-	if reflect.ValueOf(a.scenario.Spec.Environment).IsZero() {
-		a.logger.Info("IntegrationTestScenario has no environment defined")
-	} else {
-		//Same as function getEnvironmentFromIntegrationTestScenario - this could be later changed to call only that function
-		ITSEnv := &applicationapiv1alpha1.Environment{}
-
-		err := a.client.Get(a.context, types.NamespacedName{
-			Namespace: a.application.Namespace,
-			Name:      a.scenario.Spec.Environment.Name,
-		}, ITSEnv)
-
-		if err != nil {
-			a.logger.Info("Environment doesn't exist in same namespace as IntegrationTestScenario.",
-				"environment.Name:", a.scenario.Spec.Environment.Name)
-			patch := client.MergeFrom(a.scenario.DeepCopy())
-			SetScenarioIntegrationStatusAsInvalid(a.scenario, "Environment "+a.scenario.Spec.Environment.Name+" is located in different namespace than scenario.")
-			err = a.client.Status().Patch(a.context, a.scenario, patch)
-			if err != nil {
-				a.logger.Error(err, "Failed to update Scenario")
-				return controller.RequeueWithError(err)
-			}
-			a.logger.LogAuditEvent("IntegrationTestScenario marked as Invalid. Environment "+a.scenario.Spec.Environment.Name+" is located in different namespace than scenario. ",
-				a.scenario, h.LogActionUpdate)
-			return controller.ContinueProcessing()
-		}
+		return controller.ContinueProcessing()
 
 	}
 
@@ -182,7 +154,7 @@ func (a *Adapter) EnsureDeletedScenarioResourcesAreCleanedUp() (controller.Opera
 }
 
 // SetScenarioIntegrationStatusAsInvalid sets the IntegrationTestScenarioValid status condition for the Scenario to invalid.
-func SetScenarioIntegrationStatusAsInvalid(scenario *v1beta1.IntegrationTestScenario, message string) {
+func SetScenarioIntegrationStatusAsInvalid(scenario *v1beta2.IntegrationTestScenario, message string) {
 	meta.SetStatusCondition(&scenario.Status.Conditions, metav1.Condition{
 		Type:    gitops.IntegrationTestScenarioValid,
 		Status:  metav1.ConditionFalse,
@@ -192,7 +164,7 @@ func SetScenarioIntegrationStatusAsInvalid(scenario *v1beta1.IntegrationTestScen
 }
 
 // SetScenarioIntegrationStatusAsValid sets the IntegrationTestScenarioValid integration status condition for the Scenario to valid.
-func SetScenarioIntegrationStatusAsValid(scenario *v1beta1.IntegrationTestScenario, message string) {
+func SetScenarioIntegrationStatusAsValid(scenario *v1beta2.IntegrationTestScenario, message string) {
 	meta.SetStatusCondition(&scenario.Status.Conditions, metav1.Condition{
 		Type:    gitops.IntegrationTestScenarioValid,
 		Status:  metav1.ConditionTrue,

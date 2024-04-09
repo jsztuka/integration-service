@@ -18,6 +18,7 @@ package scenario
 
 import (
 	"reflect"
+
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	crwebhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
@@ -33,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	applicationapiv1alpha1 "github.com/redhat-appstudio/application-api/api/v1alpha1"
-	"github.com/redhat-appstudio/integration-service/api/v1beta1"
+	"github.com/redhat-appstudio/integration-service/api/v1beta2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
@@ -47,8 +48,8 @@ var _ = Describe("ScenarioController", func() {
 		req                ctrl.Request
 		scheme             runtime.Scheme
 		hasApp             *applicationapiv1alpha1.Application
-		hasScenario        *v1beta1.IntegrationTestScenario
-		failScenario       *v1beta1.IntegrationTestScenario
+		hasScenario        *v1beta2.IntegrationTestScenario
+		failScenario       *v1beta2.IntegrationTestScenario
 	)
 
 	BeforeEach(func() {
@@ -70,16 +71,16 @@ var _ = Describe("ScenarioController", func() {
 
 		scenarioName := "scenario-sample"
 
-		hasScenario = &v1beta1.IntegrationTestScenario{
+		hasScenario = &v1beta2.IntegrationTestScenario{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      scenarioName,
 				Namespace: "default",
 			},
-			Spec: v1beta1.IntegrationTestScenarioSpec{
+			Spec: v1beta2.IntegrationTestScenarioSpec{
 				Application: applicationName,
-				ResolverRef: v1beta1.ResolverRef{
+				ResolverRef: v1beta2.ResolverRef{
 					Resolver: "git",
-					Params: []v1beta1.ResolverParameter{
+					Params: []v1beta2.ResolverParameter{
 						{
 							Name:  "url",
 							Value: "https://github.com/redhat-appstudio/integration-examples.git",
@@ -92,13 +93,6 @@ var _ = Describe("ScenarioController", func() {
 							Name:  "pathInRepo",
 							Value: "pipelineruns/integration_pipelinerun_pass.yaml",
 						},
-					},
-				},
-				Environment: v1beta1.TestEnvironment{
-					Name: "envname",
-					Type: "POC",
-					Configuration: &applicationapiv1alpha1.EnvironmentConfiguration{
-						Env: []applicationapiv1alpha1.EnvVarPair{},
 					},
 				},
 			},
@@ -106,16 +100,16 @@ var _ = Describe("ScenarioController", func() {
 
 		Expect(k8sClient.Create(ctx, hasScenario)).Should(Succeed())
 
-		failScenario = &v1beta1.IntegrationTestScenario{
+		failScenario = &v1beta2.IntegrationTestScenario{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "failscenario",
 				Namespace: "default",
 			},
-			Spec: v1beta1.IntegrationTestScenarioSpec{
+			Spec: v1beta2.IntegrationTestScenarioSpec{
 				Application: "idontexist",
-				ResolverRef: v1beta1.ResolverRef{
+				ResolverRef: v1beta2.ResolverRef{
 					Resolver: "git",
-					Params: []v1beta1.ResolverParameter{
+					Params: []v1beta2.ResolverParameter{
 						{
 							Name:  "url",
 							Value: "https://github.com/redhat-appstudio/integration-examples.git",
@@ -128,13 +122,6 @@ var _ = Describe("ScenarioController", func() {
 							Name:  "pathInRepo",
 							Value: "pipelineruns/integration_pipelinerun_pass.yaml",
 						},
-					},
-				},
-				Environment: v1beta1.TestEnvironment{
-					Name: "envname",
-					Type: "POC",
-					Configuration: &applicationapiv1alpha1.EnvironmentConfiguration{
-						Env: []applicationapiv1alpha1.EnvVarPair{},
 					},
 				},
 			},

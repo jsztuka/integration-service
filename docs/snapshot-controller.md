@@ -10,7 +10,7 @@ flowchart TD
 
   predicate((PREDICATE: <br>Snapshot got created OR <br> changed to Finished OR <br> re-run label added AND <br> it's not restored from backup))
 
-  %%%%%%%%%%%%%%%%%%%%%%% Drawing EnsureStaticIntegrationPipelineRunsExist() function
+  %%%%%%%%%%%%%%%%%%%%%%% Drawing EnsureIntegrationPipelineRunsExist() function
 
   %% Node definitions
   ensure1(Process further if: Snapshot testing <br>is not finished yet)
@@ -27,7 +27,7 @@ flowchart TD
   continue_processing1(Controller continues processing...)
 
   %% Node connections
-  predicate                 ---->    |"EnsureStaticIntegrationPipelineRunsExist()"|ensure1
+  predicate                 ---->    |"EnsureIntegrationPipelineRunsExist()"|ensure1
   ensure1                   -->      are_there_any_ITS
   are_there_any_ITS         --Yes--> does_ITS_has_env_defined
   are_there_any_ITS         --No-->  fetch_all_required_ITS
