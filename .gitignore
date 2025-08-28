@@ -1,8 +1,27 @@
-.classpath
-.project
-.settings
-target
-.odo
-.idea
-.DS_Store
 
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin
+testbin/*
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+cover.html
+
+# editor and IDE paraphernalia
+.idea
+*.swp
+*.swo
+*~
+
+#Mac
+.DS_Store
+.AppleDouble
+.LSOverride
